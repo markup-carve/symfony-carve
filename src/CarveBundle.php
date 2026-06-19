@@ -36,7 +36,7 @@ final class CarveBundle extends AbstractBundle
     }
 
     /**
-     * @param array{safe_mode: bool, raw_html: string} $config
+     * @param array{safe_mode: bool, raw_html: string}|array $config
      * @param \Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $container
      * @param \Symfony\Component\DependencyInjection\ContainerBuilder $builder
      */
