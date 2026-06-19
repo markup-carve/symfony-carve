@@ -11,7 +11,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use Twig\Extension\AbstractExtension;
-
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 final class CarveBundle extends AbstractBundle
@@ -38,6 +37,8 @@ final class CarveBundle extends AbstractBundle
 
     /**
      * @param array{safe_mode: bool, raw_html: string} $config
+     * @param \Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $container
+     * @param \Symfony\Component\DependencyInjection\ContainerBuilder $builder
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {

@@ -11,20 +11,23 @@ use Twig\TwigFunction;
 
 /**
  * Exposes Carve rendering to Twig:
- *   {{ source|carve }}      filter
- *   {{ carve(source) }}     function
+ *   {{ source|carve }} filter
+ *   {{ carve(source) }} function
  *
  * Output is marked safe because the renderer already sanitizes per the
  * configured safe mode.
  */
 final class CarveExtension extends AbstractExtension
 {
+    /**
+     * @param \Carve\Symfony\CarveRenderer $renderer
+     */
     public function __construct(private readonly CarveRenderer $renderer)
     {
     }
 
     /**
-     * @return list<TwigFilter>
+     * @return list<\Twig\TwigFilter>
      */
     public function getFilters(): array
     {
@@ -34,7 +37,7 @@ final class CarveExtension extends AbstractExtension
     }
 
     /**
-     * @return list<TwigFunction>
+     * @return list<\Twig\TwigFunction>
      */
     public function getFunctions(): array
     {

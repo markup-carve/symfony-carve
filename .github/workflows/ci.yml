@@ -54,3 +54,21 @@ jobs:
 
       - name: PHPStan
         run: vendor/bin/phpstan analyse --no-progress
+
+  code-style:
+    runs-on: ubuntu-latest
+    name: PHPCS
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-progress
+
+      - name: PHP CodeSniffer
+        run: vendor/bin/phpcs --colors -p
