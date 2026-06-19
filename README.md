@@ -77,6 +77,12 @@ carve:
 
 Setting `safe_mode: false` disables sanitization entirely. Only do this for fully trusted input.
 
+## Demo
+
+A full runnable demo app lives at [symfony-carve-demo](https://github.com/markup-carve/symfony-carve-demo): the Twig filter and function, the `CarveRenderer` service, a live editor, a safe-mode comparison, and a syntax gallery.
+
+[![symfony-carve demo](https://raw.githubusercontent.com/markup-carve/symfony-carve-demo/main/docs/screenshots/twig-filter.png)](https://github.com/markup-carve/symfony-carve-demo)
+
 ## License
 
 MIT
