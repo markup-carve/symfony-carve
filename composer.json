@@ -4,9 +4,14 @@
     "type": "symfony-bundle",
     "license": "MIT",
     "keywords": ["carve", "djot", "markup", "symfony", "bundle", "twig", "html"],
+    "homepage": "https://github.com/markup-carve/symfony-carve",
     "authors": [
         { "name": "Mark Scherer" }
     ],
+    "support": {
+        "issues": "https://github.com/markup-carve/symfony-carve/issues",
+        "source": "https://github.com/markup-carve/symfony-carve"
+    },
     "require": {
         "php": "^8.2",
         "markup-carve/carve-php": "dev-main",
@@ -15,6 +20,7 @@
         "symfony/http-kernel": "^6.4 || ^7.0"
     },
     "require-dev": {
+        "php-collective/code-sniffer": "^0.3.0",
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^10.5 || ^11.0",
         "symfony/framework-bundle": "^6.4 || ^7.0",
@@ -36,6 +42,20 @@
         "psr-4": { "Carve\\Symfony\\Tests\\": "tests/" }
     },
     "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
         "sort-packages": true
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyze",
+        "cs-check": "phpcs --colors -p",
+        "cs-fix": "phpcbf --colors -p",
+        "check": [
+            "@cs-check",
+            "@stan",
+            "@test"
+        ]
     }
 }

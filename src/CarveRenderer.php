@@ -15,6 +15,10 @@ use Carve\SafeMode;
  */
 final class CarveRenderer
 {
+    /**
+     * @param bool $safeMode Whether to sanitize the rendered HTML.
+     * @param string $rawHtmlMode One of the SafeMode::RAW_HTML_* constants.
+     */
     public function __construct(
         private readonly bool $safeMode = true,
         private readonly string $rawHtmlMode = SafeMode::RAW_HTML_STRIP,
