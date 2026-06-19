@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Carve\Symfony;
+
+use Carve\CarveConverter;
+use Carve\SafeMode;
+
+/**
+ * Renders Carve markup to HTML using the carve-php reference implementation.
+ *
+ * A fresh converter is built per render so heading-id state never leaks
+ * between independent snippets (e.g. two `|carve` filters on one page).
+ */
+final class CarveRenderer
+{
+    public function __construct(
+        private readonly bool $safeMode = true,
+        private readonly string $rawHtmlMode = SafeMode::RAW_HTML_STRIP,
+    ) {
+    }
+
+    public function render(string $carve): string
+    {
+        $converter = new CarveConverter();
+
+        if ($this->safeMode) {
+            $converter->setSafeMode(SafeMode::defaults()->setRawHtmlMode($this->rawHtmlMode));
+        } else {
+            $converter->setSafeMode(false);
+        }
+
+        return $converter->convert($carve);
+    }
+}

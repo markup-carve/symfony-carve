@@ -1,0 +1,41 @@
+{
+    "name": "markup-carve/symfony-carve",
+    "description": "Symfony bundle to render Carve markup to HTML via carve-php.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": ["carve", "djot", "markup", "symfony", "bundle", "twig", "html"],
+    "authors": [
+        { "name": "Mark Scherer" }
+    ],
+    "require": {
+        "php": "^8.2",
+        "markup-carve/carve-php": "dev-main",
+        "symfony/config": "^6.4 || ^7.0",
+        "symfony/dependency-injection": "^6.4 || ^7.0",
+        "symfony/http-kernel": "^6.4 || ^7.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^10.5 || ^11.0",
+        "symfony/framework-bundle": "^6.4 || ^7.0",
+        "symfony/twig-bundle": "^6.4 || ^7.0",
+        "twig/twig": "^3.0"
+    },
+    "suggest": {
+        "symfony/twig-bundle": "To use the {{ value|carve }} Twig filter and carve() function"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        { "type": "vcs", "url": "https://github.com/markup-carve/carve-php" }
+    ],
+    "autoload": {
+        "psr-4": { "Carve\\Symfony\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Carve\\Symfony\\Tests\\": "tests/" }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
