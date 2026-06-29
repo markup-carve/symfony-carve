@@ -36,10 +36,10 @@
         { "type": "vcs", "url": "https://github.com/markup-carve/carve-php" }
     ],
     "autoload": {
-        "psr-4": { "Carve\\Symfony\\": "src/" }
+        "psr-4": { "MarkupCarve\\Symfony\\": "src/" }
     },
     "autoload-dev": {
-        "psr-4": { "Carve\\Symfony\\Tests\\": "tests/" }
+        "psr-4": { "MarkupCarve\\Symfony\\Tests\\": "tests/" }
     },
     "config": {
         "allow-plugins": {

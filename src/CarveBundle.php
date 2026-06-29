@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Carve\Symfony;
+namespace MarkupCarve\Symfony;
 
-use Carve\SafeMode;
-use Carve\Symfony\Twig\CarveExtension;
+use MarkupCarve\Carve\SafeMode;
+use MarkupCarve\Symfony\Twig\CarveExtension;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;

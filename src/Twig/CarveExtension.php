@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Carve\Symfony\Twig;
+namespace MarkupCarve\Symfony\Twig;
 
-use Carve\Symfony\CarveRenderer;
+use MarkupCarve\Symfony\CarveRenderer;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -20,7 +20,7 @@ use Twig\TwigFunction;
 final class CarveExtension extends AbstractExtension
 {
     /**
-     * @param \Carve\Symfony\CarveRenderer $renderer
+     * @param \MarkupCarve\Symfony\CarveRenderer $renderer
      */
     public function __construct(private readonly CarveRenderer $renderer)
     {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Carve\Symfony\Tests;
+namespace MarkupCarve\Symfony\Tests;
 
-use Carve\SafeMode;
-use Carve\Symfony\CarveRenderer;
+use MarkupCarve\Carve\SafeMode;
+use MarkupCarve\Symfony\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 
 final class CarveRendererTest extends TestCase

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Carve\Symfony;
+namespace MarkupCarve\Symfony;
 
-use Carve\CarveConverter;
-use Carve\SafeMode;
+use MarkupCarve\Carve\CarveConverter;
+use MarkupCarve\Carve\SafeMode;
 
 /**
  * Renders Carve markup to HTML using the carve-php reference implementation.
