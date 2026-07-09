@@ -1,28 +1,17 @@
 # symfony-carve
 
-Symfony bundle that renders [Carve](https://github.com/markup-carve/carve) markup to HTML using the [carve-php](https://github.com/markup-carve/carve-php) reference implementation.
+[![CI](https://github.com/markup-carve/symfony-carve/actions/workflows/ci.yml/badge.svg)](https://github.com/markup-carve/symfony-carve/actions/workflows/ci.yml)
+[![PHP](https://img.shields.io/packagist/php-v/markup-carve/symfony-carve)](https://packagist.org/packages/markup-carve/symfony-carve)
+[![License](https://img.shields.io/packagist/l/markup-carve/symfony-carve)](LICENSE)
+
+Symfony bundle that renders [Carve](https://github.com/markup-carve/carve) markup to HTML using [carve-php](https://github.com/markup-carve/carve-php).
 
 Carve is "Djot minus the footguns": a lightweight markup language with consistent, unambiguous syntax.
-
-> [!NOTE]
-> carve-php is not yet tagged on Packagist. Until it is, this bundle pulls it as `dev-main` straight from GitHub (the VCS repository is declared in `composer.json`).
 
 ## Installation
 
 ```bash
-composer require markup-carve/symfony-carve:dev-main
-```
-
-If your project does not already allow dev stability, add the VCS repository and stability flags to your root `composer.json`:
-
-```json
-{
-    "minimum-stability": "dev",
-    "prefer-stable": true,
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/markup-carve/carve-php" }
-    ]
-}
+composer require markup-carve/symfony-carve
 ```
 
 Register the bundle (Symfony Flex does this automatically; otherwise add it to `config/bundles.php`):
