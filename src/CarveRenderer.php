@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MarkupCarve\Symfony;
+namespace MarkupCarve\SymfonyCarve;
 
 use MarkupCarve\Carve\CarveConverter;
 use MarkupCarve\Carve\SafeMode;

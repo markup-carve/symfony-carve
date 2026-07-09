@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MarkupCarve\Symfony\Tests\Twig;
+namespace MarkupCarve\SymfonyCarve\Tests\Twig;
 
-use MarkupCarve\Symfony\CarveRenderer;
-use MarkupCarve\Symfony\Twig\CarveExtension;
+use MarkupCarve\SymfonyCarve\CarveRenderer;
+use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;

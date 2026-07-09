@@ -44,12 +44,12 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "MarkupCarve\\Symfony\\": "src/"
+            "MarkupCarve\\SymfonyCarve\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "MarkupCarve\\Symfony\\Tests\\": "tests/"
+            "MarkupCarve\\SymfonyCarve\\Tests\\": "tests/"
         }
     },
     "config": {
