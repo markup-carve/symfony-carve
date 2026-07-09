@@ -30,7 +30,7 @@ Register the bundle (Symfony Flex does this automatically; otherwise add it to `
 ```php
 return [
     // ...
-    Carve\Symfony\CarveBundle::class => ['all' => true],
+    MarkupCarve\Symfony\CarveBundle::class => ['all' => true],
 ];
 ```
 
@@ -39,7 +39,7 @@ return [
 ### Service
 
 ```php
-use Carve\Symfony\CarveRenderer;
+use MarkupCarve\Symfony\CarveRenderer;
 
 public function show(CarveRenderer $carve): Response
 {
