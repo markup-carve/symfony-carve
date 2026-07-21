@@ -40,4 +40,48 @@ final class CarveRendererTest extends TestCase
 
         $this->assertSame($first, $second);
     }
+
+    public function testDiagramsDefaultLeavesFencedBlockUnchanged(): void
+    {
+        $carve = "``` plantuml\nA -> B\n```";
+
+        $default = (new CarveRenderer())->render($carve);
+        $explicitEmpty = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, []))->render($carve);
+
+        // No FencedRenderExtension applied: rendered as a plain code block, and
+        // the default and the explicit-empty config produce identical output.
+        $this->assertStringNotContainsString('<pre class="plantuml"', $default);
+        $this->assertStringContainsString('<code', $default);
+        $this->assertSame($default, $explicitEmpty);
+    }
+
+    public function testPlantumlPresetRendersHydrationElement(): void
+    {
+        $carve = "``` plantuml\nA -> B\n```";
+
+        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['plantuml']))->render($carve);
+
+        $this->assertStringContainsString('<pre class="plantuml">', $html);
+        $this->assertStringContainsString('A -> B', $html);
+    }
+
+    public function testMermaidPresetRendersHydrationElement(): void
+    {
+        $carve = "``` mermaid\ngraph TD; A-->B\n```";
+
+        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['mermaid']))->render($carve);
+
+        $this->assertStringContainsString('<pre class="mermaid">', $html);
+    }
+
+    public function testUnknownDiagramNameIsIgnored(): void
+    {
+        $carve = "``` plantuml\nA -> B\n```";
+
+        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['nope']))->render($carve);
+
+        // Unknown preset skipped, so the plantuml fence stays a plain code block.
+        $this->assertStringNotContainsString('<pre class="plantuml"', $html);
+        $this->assertStringContainsString('<code', $html);
+    }
 }
