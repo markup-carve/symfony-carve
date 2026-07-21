@@ -32,11 +32,27 @@ final class CarveBundle extends AbstractBundle
                     ])
                     ->defaultValue(SafeMode::RAW_HTML_STRIP)
                 ->end()
+                ->arrayNode('diagrams')
+                    ->info('Diagram/extension fenced-block presets to enable. Each needs a client-side renderer on the page (see README).')
+                    ->enumPrototype()
+                        ->values([
+                            'mermaid',
+                            'plantuml',
+                            'd2',
+                            'graphviz',
+                            'wavedrom',
+                            'vega_lite',
+                            'chart',
+                            'abc',
+                        ])
+                    ->end()
+                    ->defaultValue([])
+                ->end()
             ->end();
     }
 
     /**
-     * @param array{safe_mode: bool, raw_html: string}|array<string, mixed> $config
+     * @param array{safe_mode: bool, raw_html: string, diagrams: array<string>}|array<string, mixed> $config
      * @param \Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $container
      * @param \Symfony\Component\DependencyInjection\ContainerBuilder $builder
      */
@@ -45,7 +61,7 @@ final class CarveBundle extends AbstractBundle
         $services = $container->services();
 
         $services->set(CarveRenderer::class)
-            ->args([$config['safe_mode'], $config['raw_html']])
+            ->args([$config['safe_mode'], $config['raw_html'], $config['diagrams']])
             ->public();
 
         // Register the Twig extension only when Twig is installed, so the
