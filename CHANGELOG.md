@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Require `markup-carve/carve-php` ^0.1.3 (the cross-engine convergence release: strict column-0, unresolved footnote-ref, tight-item trailing text, list looseness).
+
 ## 0.1.1 - 2026-07-09
 
 - BREAKING: namespace renamed from `MarkupCarve\Symfony` to
