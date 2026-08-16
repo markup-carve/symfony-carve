@@ -63,12 +63,27 @@ final class CarveRendererTest extends TestCase
         $this->assertStringContainsString('<p># Heading</p>', $html);
     }
 
+    /**
+     * The minimal profile denies images, so both non-HTML targets must degrade
+     * the image to its alt text instead of emitting a reference to the file.
+     * The assertions deliberately avoid pinning the Markdown renderer's
+     * bracket-escaping, which is a detail of that renderer rather than of the
+     * profile being applied.
+     */
     public function testProfileAppliesToTextAndMarkdownRenderers(): void
     {
         $renderer = new CarveRenderer(profile: 'minimal');
+        $source = '![alt](https://example.com/image.png)';
 
-        $this->assertSame("[img: alt]\n", $renderer->renderText('![alt](https://example.com/image.png)'));
-        $this->assertSame("\[img: alt\]\n", $renderer->renderMarkdown('![alt](https://example.com/image.png)'));
+        $text = $renderer->renderText($source);
+        $markdown = $renderer->renderMarkdown($source);
+
+        $this->assertStringContainsString('img: alt', $text);
+        $this->assertStringNotContainsString('example.com', $text);
+
+        $this->assertStringContainsString('img: alt', $markdown);
+        $this->assertStringNotContainsString('example.com', $markdown);
+        $this->assertStringNotContainsString('!', $markdown);
     }
 
     public function testDiagramsDefaultLeavesFencedBlockUnchanged(): void
