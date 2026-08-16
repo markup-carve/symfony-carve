@@ -41,6 +41,36 @@ final class CarveRendererTest extends TestCase
         $this->assertSame($first, $second);
     }
 
+    public function testRendersPlainText(): void
+    {
+        $text = (new CarveRenderer())->renderText('# Hello *world*');
+
+        $this->assertSame("Hello world\n", $text);
+    }
+
+    public function testRendersMarkdown(): void
+    {
+        $markdown = (new CarveRenderer())->renderMarkdown('# Hello *world*');
+
+        $this->assertSame("# Hello **world**\n", $markdown);
+    }
+
+    public function testCommentProfileRestrictsHeadings(): void
+    {
+        $html = (new CarveRenderer(profile: 'comment'))->render('# Heading');
+
+        $this->assertStringNotContainsString('<h1', $html);
+        $this->assertStringContainsString('<p># Heading</p>', $html);
+    }
+
+    public function testProfileAppliesToTextAndMarkdownRenderers(): void
+    {
+        $renderer = new CarveRenderer(profile: 'minimal');
+
+        $this->assertSame("[img: alt]\n", $renderer->renderText('![alt](https://example.com/image.png)'));
+        $this->assertSame("\[img: alt\]\n", $renderer->renderMarkdown('![alt](https://example.com/image.png)'));
+    }
+
     public function testDiagramsDefaultLeavesFencedBlockUnchanged(): void
     {
         $carve = "``` plantuml\nA -> B\n```";
