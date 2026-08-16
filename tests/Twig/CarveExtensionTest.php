@@ -47,4 +47,28 @@ final class CarveExtensionTest extends TestCase
 
         $this->assertStringNotContainsString('&lt;', $out);
     }
+
+    public function testTextFilterRendersAndIsEscaped(): void
+    {
+        $twig = new Environment(new ArrayLoader([
+            'tpl' => '{{ source|carve_text }}',
+        ]));
+        $twig->addExtension(new CarveExtension(new CarveRenderer()));
+
+        $out = $twig->render('tpl', ['source' => '*bold* <tag>']);
+
+        $this->assertSame("bold &lt;tag&gt;\n", $out);
+    }
+
+    public function testMarkdownFilterRendersAndIsEscaped(): void
+    {
+        $twig = new Environment(new ArrayLoader([
+            'tpl' => '{{ source|carve_markdown }}',
+        ]));
+        $twig->addExtension(new CarveExtension(new CarveRenderer()));
+
+        $out = $twig->render('tpl', ['source' => '*bold* <tag>']);
+
+        $this->assertSame("**bold** &amp;lt;tag&amp;gt;\n", $out);
+    }
 }

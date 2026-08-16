@@ -33,6 +33,8 @@ use MarkupCarve\SymfonyCarve\CarveRenderer;
 public function show(CarveRenderer $carve): Response
 {
     $html = $carve->render('# Hello *world*');
+    $text = $carve->renderText('# Hello *world*');
+    $markdown = $carve->renderMarkdown('# Hello *world*');
 
     return new Response($html);
 }
@@ -46,9 +48,15 @@ public function show(CarveRenderer $carve): Response
 
 {# function #}
 {{ carve('# Inline /snippet/') }}
+
+{# plain text and Markdown filters (escaped normally by Twig) #}
+{{ article.body|carve_text }}
+{{ article.body|carve_markdown }}
 ```
 
-Output is marked safe, so Twig does not double-escape it. The renderer sanitizes input according to the configured safe mode before that point.
+Only the HTML output from `carve` is marked safe, so Twig does not double-escape it. The
+`carve_text` and `carve_markdown` filters are not HTML and Twig escapes them normally. Safe mode
+only affects HTML rendering; profiles apply to all three output formats.
 
 ## Configuration
 
@@ -57,6 +65,7 @@ Output is marked safe, so Twig does not double-escape it. The renderer sanitizes
 carve:
     safe_mode: true      # sanitize HTML (default: true)
     raw_html: strip      # strip | escape | allow (default: strip)
+    profile: null        # null | full | article | comment | minimal (default: null)
     diagrams: []         # diagram presets to enable (default: none)
 ```
 
@@ -64,9 +73,12 @@ carve:
 |-------------|----------|---------|-----------------------------------------------------------------------------|
 | `safe_mode` | bool     | `true`  | Enable HTML sanitization. Keep this on for untrusted input.                 |
 | `raw_html`  | enum     | `strip` | How raw HTML is handled when `safe_mode` is on: `strip`, `escape`, `allow`. |
+| `profile`   | enum\|null | `null` | Restrict markup features using `full`, `article`, `comment`, or `minimal`. |
 | `diagrams`  | string[] | `[]`    | Diagram fenced-block presets to enable (see below). Off by default.         |
 
 Setting `safe_mode: false` disables sanitization entirely. Only do this for fully trusted input.
+Safe mode only affects HTML output. Profiles restrict available constructs for HTML, plain-text,
+and Markdown output; `null` leaves all constructs available.
 
 ### Diagrams
 

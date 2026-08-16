@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add rendering profiles and plain-text and Markdown service/Twig output targets.
+
 ## 0.1.3 - 2026-08-10
 
 - Require carve-php `^0.1.4`, the current security and parser/writer

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve;
 
+use InvalidArgumentException;
 use MarkupCarve\Carve\CarveConverter;
 use MarkupCarve\Carve\Extension\FencedRenderExtension;
+use MarkupCarve\Carve\Profile;
 use MarkupCarve\Carve\SafeMode;
 
 /**
- * Renders Carve markup to HTML using the carve-php reference implementation.
+ * Renders Carve markup using the carve-php reference implementation.
  *
  * A fresh converter is built per render so heading-id state never leaks
  * between independent snippets (e.g. two `|carve` filters on one page).
@@ -22,11 +24,13 @@ final class CarveRenderer
      * @param array<string> $diagrams Diagram fenced-block presets to enable
      *   (e.g. `mermaid`, `plantuml`). Unknown names are ignored. Empty (default)
      *   keeps the bare converter, so nothing changes for existing users.
+     * @param string|null $profile Feature restriction preset, or null for none.
      */
     public function __construct(
         private readonly bool $safeMode = true,
         private readonly string $rawHtmlMode = SafeMode::RAW_HTML_STRIP,
         private readonly array $diagrams = [],
+        private readonly ?string $profile = null,
     ) {
     }
 
@@ -40,6 +44,31 @@ final class CarveRenderer
             $converter->setSafeMode(false);
         }
 
+        return $this->configure($converter)->convert($carve);
+    }
+
+    public function renderText(string $carve): string
+    {
+        return $this->configure(CarveConverter::plainText())->convert($carve);
+    }
+
+    public function renderMarkdown(string $carve): string
+    {
+        return $this->configure(CarveConverter::markdown())->convert($carve);
+    }
+
+    private function configure(CarveConverter $converter): CarveConverter
+    {
+        if ($this->profile !== null) {
+            $converter->setProfile(match ($this->profile) {
+                'full' => Profile::full(),
+                'article' => Profile::article(),
+                'comment' => Profile::comment(),
+                'minimal' => Profile::minimal(),
+                default => throw new InvalidArgumentException(sprintf('Unknown Carve profile "%s".', $this->profile)),
+            });
+        }
+
         if ($this->diagrams !== []) {
             $factories = self::diagramPresetFactories();
             foreach ($this->diagrams as $name) {
@@ -51,7 +80,7 @@ final class CarveRenderer
             }
         }
 
-        return $converter->convert($carve);
+        return $converter;
     }
 
     /**

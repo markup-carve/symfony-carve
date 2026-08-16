@@ -12,10 +12,12 @@ use Twig\TwigFunction;
 /**
  * Exposes Carve rendering to Twig:
  *   {{ source|carve }} filter
+ *   {{ source|carve_text }} filter
+ *   {{ source|carve_markdown }} filter
  *   {{ carve(source) }} function
  *
- * Output is marked safe because the renderer already sanitizes per the
- * configured safe mode.
+ * HTML output is marked safe because the renderer already sanitizes per the
+ * configured safe mode. Text and Markdown output use Twig's normal escaping.
  */
 final class CarveExtension extends AbstractExtension
 {
@@ -33,6 +35,8 @@ final class CarveExtension extends AbstractExtension
     {
         return [
             new TwigFilter('carve', $this->render(...), ['is_safe' => ['html']]),
+            new TwigFilter('carve_text', $this->renderText(...)),
+            new TwigFilter('carve_markdown', $this->renderMarkdown(...)),
         ];
     }
 
@@ -49,5 +53,15 @@ final class CarveExtension extends AbstractExtension
     public function render(string $carve): string
     {
         return $this->renderer->render($carve);
+    }
+
+    public function renderText(string $carve): string
+    {
+        return $this->renderer->renderText($carve);
+    }
+
+    public function renderMarkdown(string $carve): string
+    {
+        return $this->renderer->renderMarkdown($carve);
     }
 }
