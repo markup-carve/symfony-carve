@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 0.1.4 - 2026-08-18
+
+### Security
+
+- Require carve-php `^0.1.5`, which probes **every** candidate in a list-valued
+  URL attribute instead of trusting the value's leading scheme.
+  `srcset="safe.png 1x, javascript:alert(1) 2x"` passed the probe on its second
+  entry. Upgrade if you render untrusted Carve or import untrusted HTML.
+
+### Changed
+
+- The `carve_markdown` filter's output changes: carve-php 0.1.5 escapes `<` only
+  where it would open markup and leaves a bare ampersand alone, so `<tag>` now
+  renders as `\<tag>` rather than as an HTML entity. A list-table header cell
+  also carries `scope` now.
+
+### Added
+
 - Add rendering profiles and plain-text and Markdown service/Twig output targets.
 
 ## 0.1.3 - 2026-08-10

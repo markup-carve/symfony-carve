@@ -69,6 +69,6 @@ final class CarveExtensionTest extends TestCase
 
         $out = $twig->render('tpl', ['source' => '*bold* <tag>']);
 
-        $this->assertSame("**bold** &amp;lt;tag&amp;gt;\n", $out);
+        $this->assertSame("**bold** \\&lt;tag&gt;\n", $out);
     }
 }
