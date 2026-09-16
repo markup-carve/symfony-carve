@@ -53,11 +53,19 @@ final class CarveBundle extends AbstractBundle
                     ->end()
                     ->defaultValue([])
                 ->end()
+                ->scalarNode('include_root')
+                    ->info('Absolute containment root for opt-in file includes. String and Twig rendering remain literal.')
+                    ->defaultNull()
+                    ->validate()
+                        ->ifTrue(static fn (mixed $value): bool => $value !== null && (!is_string($value) || !self::isAbsolutePath($value)))
+                        ->thenInvalid('carve.include_root must be an absolute path.')
+                    ->end()
+                ->end()
             ->end();
     }
 
     /**
-     * @param array{safe_mode: bool, raw_html: string, profile: string|null, diagrams: array<string>}|array<string, mixed> $config
+     * @param array{safe_mode: bool, raw_html: string, profile: string|null, diagrams: array<string>, include_root: string|null}|array<string, mixed> $config
      * @param \Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator $container
      * @param \Symfony\Component\DependencyInjection\ContainerBuilder $builder
      */
@@ -66,7 +74,14 @@ final class CarveBundle extends AbstractBundle
         $services = $container->services();
 
         $services->set(CarveRenderer::class)
-            ->args([$config['safe_mode'], $config['raw_html'], $config['diagrams'], $config['profile']])
+            ->args([
+                $config['safe_mode'],
+                $config['raw_html'],
+                $config['diagrams'],
+                $config['profile'],
+                $config['include_root'],
+                service('logger')->nullOnInvalid(),
+            ])
             ->public();
 
         // Register the Twig extension only when Twig is installed, so the
@@ -76,5 +91,10 @@ final class CarveBundle extends AbstractBundle
                 ->args([service(CarveRenderer::class)])
                 ->tag('twig.extension');
         }
+    }
+
+    private static function isAbsolutePath(string $path): bool
+    {
+        return str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $path) === 1;
     }
 }

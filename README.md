@@ -67,6 +67,7 @@ carve:
     raw_html: strip      # strip | escape | allow (default: strip)
     profile: null        # null | full | article | comment | minimal (default: null)
     diagrams: []         # diagram presets to enable (default: none)
+    include_root: null   # absolute trusted filesystem root (default: off)
 ```
 
 | Key         | Type     | Default | Description                                                                 |
@@ -75,10 +76,34 @@ carve:
 | `raw_html`  | enum     | `strip` | How raw HTML is handled when `safe_mode` is on: `strip`, `escape`, `allow`. |
 | `profile`   | enum\|null | `null` | Restrict markup features using `full`, `article`, `comment`, or `minimal`. |
 | `diagrams`  | string[] | `[]`    | Diagram fenced-block presets to enable (see below). Off by default.         |
+| `include_root` | string\|null | `null` | Absolute containment root for file-backed rendering. |
 
 Setting `safe_mode: false` disables sanitization entirely. Only do this for fully trusted input.
 Safe mode only affects HTML output. Profiles restrict available constructs for HTML, plain-text,
 and Markdown output; `null` leaves all constructs available.
+
+### File includes
+
+Twig filters and `CarveRenderer::render()` accept anonymous strings, so they
+never read files. Set an absolute `include_root` and call the explicit file API
+for trusted, file-backed content:
+
+```php
+$report = $renderer->renderFileWithReport('/srv/docs/book/main.crv');
+$html = $report['value'];
+$warnings = $report['warnings'];
+$dependencies = $report['dependencies'];
+```
+
+`renderFile()` is the HTML-only convenience form. Relative includes resolve
+from the file containing each directive and cannot traverse or follow a symlink
+outside the configured root. Warning reports omit resolver details and replace
+outside paths before they reach the optional PSR logger.
+
+The dependency list contains resolved and attempted targets. Applications that
+cache rendered HTML must include those identities in their invalidation policy,
+including missing targets, so creating a formerly missing file invalidates its
+parent. The bundle does not prescribe a cache implementation.
 
 ### Diagrams
 

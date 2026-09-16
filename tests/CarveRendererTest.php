@@ -7,9 +7,76 @@ namespace MarkupCarve\SymfonyCarve\Tests;
 use MarkupCarve\Carve\SafeMode;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
+use Stringable;
 
 final class CarveRendererTest extends TestCase
 {
+    public function testFileRenderExpandsContainedIncludesAndReportsDependencies(): void
+    {
+        $root = sys_get_temp_dir() . '/symfony-carve-' . bin2hex(random_bytes(6));
+        mkdir($root . '/chapters', 0777, true);
+        file_put_contents($root . '/main.crv', "# Main\n\n{{ chapters/one.crv }}\n");
+        file_put_contents($root . '/chapters/one.crv', "Included.\n");
+
+        try {
+            $result = (new CarveRenderer(includeRoot: $root))->renderFileWithReport($root . '/main.crv');
+            self::assertStringContainsString('Included.', $result['value']);
+            self::assertSame([['path' => 'chapters/one.crv', 'resolved' => true]], $result['dependencies']);
+        } finally {
+            unlink($root . '/chapters/one.crv');
+            unlink($root . '/main.crv');
+            rmdir($root . '/chapters');
+            rmdir($root);
+        }
+    }
+
+    public function testFileRenderLogsSanitizedWarningWithoutResolverDetail(): void
+    {
+        $root = sys_get_temp_dir() . '/symfony-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        file_put_contents($root . '/main.crv', "{{ missing.crv }}\n");
+        $logger = new class extends AbstractLogger {
+            /**
+             * @var list<array{level: mixed, message: string}>
+             */
+            public array $records = [];
+
+            /**
+             * @param mixed $level
+             * @param \Stringable|string $message
+             * @param array<mixed> $context
+             *
+             * @return void
+             */
+            public function log($level, Stringable|string $message, array $context = []): void
+            {
+                $this->records[] = ['level' => $level, 'message' => (string)$message];
+            }
+        };
+
+        try {
+            $result = (new CarveRenderer(includeRoot: $root, logger: $logger))->renderFileWithReport($root . '/main.crv');
+            self::assertSame('include-unresolved', $result['warnings'][0]['rule']);
+            self::assertStringNotContainsString($root, json_encode($result['warnings'], JSON_THROW_ON_ERROR));
+            self::assertNotEmpty($logger->records);
+        } finally {
+            unlink($root . '/main.crv');
+            rmdir($root);
+        }
+    }
+
+    public function testFileRenderLeavesIncludesLiteralWithoutConfiguredRoot(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'symfony-carve-');
+        file_put_contents($path, "{{ missing.crv }}\n");
+        try {
+            self::assertStringContainsString('{{ missing.crv }}', (new CarveRenderer())->renderFile($path));
+        } finally {
+            unlink($path);
+        }
+    }
+
     public function testRendersHeading(): void
     {
         $html = (new CarveRenderer())->render('# Hello');
@@ -106,7 +173,7 @@ final class CarveRendererTest extends TestCase
 
         $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['plantuml']))->render($carve);
 
-        $this->assertStringContainsString('<pre class="plantuml">', $html);
+        $this->assertStringContainsString('<pre class="plantuml"', $html);
         $this->assertStringContainsString('A -> B', $html);
     }
 
@@ -116,7 +183,7 @@ final class CarveRendererTest extends TestCase
 
         $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['mermaid']))->render($carve);
 
-        $this->assertStringContainsString('<pre class="mermaid">', $html);
+        $this->assertStringContainsString('<pre class="mermaid"', $html);
     }
 
     public function testUnknownDiagramNameIsIgnored(): void

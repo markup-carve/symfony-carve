@@ -12,6 +12,14 @@ use Symfony\Component\Config\Definition\Processor;
 
 final class CarveBundleTest extends TestCase
 {
+    public function testRelativeIncludeRootIsRejected(): void
+    {
+        $configuration = new Configuration(new CarveBundle(), null, 'carve');
+
+        $this->expectException(InvalidConfigurationException::class);
+        (new Processor())->processConfiguration($configuration, [['include_root' => 'content']]);
+    }
+
     public function testInvalidProfileIsRejectedByConfiguration(): void
     {
         $configuration = new Configuration(new CarveBundle(), null, 'carve');
