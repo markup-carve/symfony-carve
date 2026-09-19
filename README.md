@@ -100,6 +100,10 @@ from the file containing each directive and cannot traverse or follow a symlink
 outside the configured root. Warning reports omit resolver details and replace
 outside paths before they reach the optional PSR logger.
 
+`include_root` has to be an absolute path, and the renderer refuses a relative
+one rather than resolving it against the working directory, which is arbitrary
+with respect to the document.
+
 The dependency list contains resolved and attempted targets. Applications that
 cache rendered HTML must include those identities in their invalidation policy,
 including missing targets, so creating a formerly missing file invalidates its

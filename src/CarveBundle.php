@@ -54,12 +54,8 @@ final class CarveBundle extends AbstractBundle
                     ->defaultValue([])
                 ->end()
                 ->scalarNode('include_root')
-                    ->info('Absolute containment root for opt-in file includes. String and Twig rendering remain literal.')
+                    ->info('Absolute containment root for opt-in file includes. String and Twig rendering remain literal. The resolver refuses a relative root rather than resolving it against the working directory.')
                     ->defaultNull()
-                    ->validate()
-                        ->ifTrue(static fn (mixed $value): bool => $value !== null && (!is_string($value) || !self::isAbsolutePath($value)))
-                        ->thenInvalid('carve.include_root must be an absolute path.')
-                    ->end()
                 ->end()
             ->end();
     }
@@ -91,10 +87,5 @@ final class CarveBundle extends AbstractBundle
                 ->args([service(CarveRenderer::class)])
                 ->tag('twig.extension');
         }
-    }
-
-    private static function isAbsolutePath(string $path): bool
-    {
-        return str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $path) === 1;
     }
 }
