@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## 0.1.5 - 2026-09-20
+
+### Added
+
+- Add opt-in file-backed rendering: an absolute `include_root`, plus
+  `CarveRenderer::renderFile()` and `renderFileWithReport()`. The Twig filters
+  and `render()` still take anonymous strings and never read files. A report
+  carries the resolved and attempted include targets so an application can key
+  its own cache on them, and warnings reaching the logger omit resolver
+  details (#13)
+
+### Changed
+
+- Require carve-php `^0.1.9`, the first tag carrying the include pass the file
+  API runs on, and add `psr/log` as a runtime requirement for the optional
+  warning logger (#13)
+
 ## 0.1.4 - 2026-08-18
 
 ### Security
