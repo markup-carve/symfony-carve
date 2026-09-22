@@ -6,7 +6,7 @@
 
 Symfony bundle that renders [Carve](https://github.com/markup-carve/carve) markup to HTML using [carve-php](https://github.com/markup-carve/carve-php).
 
-Carve is "Djot minus the footguns": a lightweight markup language with consistent, unambiguous syntax.
+Carve is a lightweight markup language for structured documents, with clear, consistent syntax.
 
 ## Installation
 
