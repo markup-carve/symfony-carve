@@ -14,5 +14,4 @@ phpcs.xml export-ignore
 .gitattributes export-ignore
 .editorconfig export-ignore
 renovate.json export-ignore
-CONTRIBUTING.md export-ignore
 tests/ export-ignore
