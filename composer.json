@@ -28,6 +28,7 @@
         "psr/log": "^1.1 || ^2.0 || ^3.0",
         "symfony/cache-contracts": "^2.5 || ^3.0",
         "symfony/config": "^6.4 || ^7.0",
+        "symfony/console": "^6.4 || ^7.0",
         "symfony/dependency-injection": "^6.4 || ^7.0",
         "symfony/http-kernel": "^6.4 || ^7.0"
     },
@@ -38,11 +39,15 @@
         "symfony/cache": "^6.4 || ^7.0",
         "symfony/framework-bundle": "^6.4 || ^7.0",
         "symfony/twig-bundle": "^6.4 || ^7.0",
+        "symfony/validator": "^6.4 || ^7.0",
         "symfony/yaml": "^6.4 || ^7.0",
         "twig/twig": "^3.0"
     },
     "suggest": {
-        "symfony/twig-bundle": "To use the {{ value|carve }} Twig filter and carve() function"
+        "symfony/cache": "To cache rendered HTML through a cache pool",
+        "symfony/twig-bundle": "To use the {{ value|carve }} Twig filter and carve() function",
+        "symfony/validator": "To use the ValidCarve constraint",
+        "symfony/yaml": "To read YAML frontmatter through RenderedCarve::meta()"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

@@ -19,6 +19,10 @@
   import.
 - Twig: render options on `carve`, plus `carve_format`, `carve_file`,
   `carve_document` and `carve_lint`.
+- Add the console commands `carve:render`, `carve:lint` (with `--include-root`),
+  `carve:fmt` (with `--write`, `--check` and `--align-tables`) and `carve:convert`.
+- Add a `ValidCarve` validator constraint with `preset`, `strict`, `lint` and
+  `maxLength` options (needs `symfony/validator`).
 - Require carve-php `^0.1.14`.
 
 ## 0.1.5 - 2026-09-20
