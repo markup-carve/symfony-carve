@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Improvements
+
+- Expose every render option in the bundle configuration: `safe_mode: strict`,
+  `on_disallowed`, `mode`, `soft_break_mode`, `xhtml`, `source_lines`,
+  `smart_typography`, `symbols` and `labels`, plus `CarveRenderer::withOptions()` for
+  one rendering context.
+- Configure carve-php extensions under `extensions`, by type name or with options,
+  including a `url_template` for wiki links.
+- Cache rendered HTML in a Symfony cache pool (`cache.enabled`), invalidated by option,
+  engine version and, for file renders, by every include target.
+- Add `CarveRenderer::renderResult()` with the table of contents and frontmatter, and
+  `renderAnsi()`.
+- Add a `CarveTools` service for `format()` (with `alignTables`), `lint()` (every
+  `DocumentLinter` rule, optionally following includes) and Markdown, HTML and Djot
+  import.
+- Twig: render options on `carve`, plus `carve_format`, `carve_file`,
+  `carve_document` and `carve_lint`.
+- Require carve-php `^0.1.14`.
+
 ## 0.1.5 - 2026-09-20
 
 ### Added
