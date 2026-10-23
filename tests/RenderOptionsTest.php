@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
+use MarkupCarve\Carve\Extension\TableOfContentsExtension;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 
@@ -95,6 +96,16 @@ final class RenderOptionsTest extends TestCase
 
         self::assertCount(1, $renderer->renderResult('# One')->toc());
         self::assertCount(1, $renderer->renderResult('# Two')->toc());
+    }
+
+    public function testAnExtensionInstanceIsClonedPerRender(): void
+    {
+        $toc = new TableOfContentsExtension();
+        $renderer = new CarveRenderer(extensions: [$toc]);
+
+        self::assertCount(1, $renderer->renderResult('# One')->toc());
+        self::assertCount(1, $renderer->renderResult('# Two')->toc());
+        self::assertSame([], $toc->getToc());
     }
 
     public function testAnUnknownExtensionIsRefusedAtConstruction(): void

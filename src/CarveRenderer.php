@@ -512,7 +512,9 @@ final class CarveRenderer
      */
     private function freshExtension(ExtensionInterface|array|string $entry): ExtensionInterface
     {
-        return $this->extensionFactory->create($entry);
+        // A configured instance is a template: only clones are registered, so
+        // state one render collects never reaches the next.
+        return $entry instanceof ExtensionInterface ? clone $entry : $this->extensionFactory->create($entry);
     }
 
     /**
