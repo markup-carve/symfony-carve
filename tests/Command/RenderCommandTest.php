@@ -42,6 +42,16 @@ final class RenderCommandTest extends CommandTestCase
         self::assertStringContainsString('Included.', $tester->getDisplay());
     }
 
+    public function testACodeIncludeRendersTheFileAsACodeBlock(): void
+    {
+        $this->file('snippet.php', "<?php echo 1;\n");
+        $tester = new CommandTester(new RenderCommand(new CarveRenderer(includeRoot: $this->dir)));
+
+        $tester->execute(['path' => $this->file('main.crv', "{{ snippet.php @code:php }}\n")]);
+
+        self::assertStringContainsString('<code class="language-php">&lt;?php echo 1;', $tester->getDisplay());
+    }
+
     public function testPresetOptionAppliesAProfile(): void
     {
         $tester = new CommandTester(new RenderCommand(new CarveRenderer()));
