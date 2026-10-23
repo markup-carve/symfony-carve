@@ -2,28 +2,30 @@
 
 ## Unreleased
 
+## 0.1.6 - 2026-10-23
+
 ### Improvements
 
 - Expose every render option in the bundle configuration: `safe_mode: strict`,
   `on_disallowed`, `mode`, `soft_break_mode`, `xhtml`, `source_lines`,
   `smart_typography`, `symbols` and `labels`, plus `CarveRenderer::withOptions()` for
-  one rendering context.
+  one rendering context (#25)
 - Configure carve-php extensions under `extensions`, by type name or with options,
-  including a `url_template` for wiki links.
+  including a `url_template` for wiki links (#25)
 - Cache rendered HTML in a Symfony cache pool (`cache.enabled`), invalidated by option,
-  engine version and, for file renders, by every include target.
+  engine version and, for file renders, by every include target (#25)
 - Add `CarveRenderer::renderResult()` with the table of contents and frontmatter, and
-  `renderAnsi()`.
+  `renderAnsi()` (#25)
 - Add a `CarveTools` service for `format()` (with `alignTables`), `lint()` (every
   `DocumentLinter` rule, optionally following includes) and Markdown, HTML and Djot
-  import.
+  import (#25)
 - Twig: render options on `carve`, plus `carve_format`, `carve_file`,
-  `carve_document` and `carve_lint`.
+  `carve_document` and `carve_lint` (#25)
 - Add the console commands `carve:render`, `carve:lint` (with `--include-root`),
-  `carve:fmt` (with `--write`, `--check` and `--align-tables`) and `carve:convert`.
+  `carve:fmt` (with `--write`, `--check` and `--align-tables`) and `carve:convert` (#26)
 - Add a `ValidCarve` validator constraint with `preset`, `strict`, `lint` and
-  `maxLength` options (needs `symfony/validator`).
-- Require carve-php `^0.1.14`.
+  `maxLength` options (needs `symfony/validator`) (#26)
+- Require carve-php `^0.1.14`, plus `symfony/console` and `symfony/cache-contracts` (#25, #26)
 
 ## 0.1.5 - 2026-09-20
 
