@@ -7,13 +7,20 @@ namespace MarkupCarve\SymfonyCarve\Tests;
 use MarkupCarve\SymfonyCarve\CarveBundle;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\CarveTools;
+use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
+use MarkupCarve\SymfonyCarve\Command\FormatCommand;
+use MarkupCarve\SymfonyCarve\Command\LintCommand;
+use MarkupCarve\SymfonyCarve\Command\RenderCommand;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
+use MarkupCarve\SymfonyCarve\Validator\ValidCarveValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Config\Definition\Configuration;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
+use Symfony\Component\Console\DependencyInjection\AddConsoleCommandPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 final class CarveBundleTest extends TestCase
@@ -106,6 +113,30 @@ final class CarveBundleTest extends TestCase
         $container = $this->container([], compile: false);
 
         self::assertArrayHasKey(CarveExtension::class, $container->findTaggedServiceIds('twig.extension'));
+    }
+
+    public function testCommandsAndTheValidatorAreTagged(): void
+    {
+        $container = $this->container([], compile: false);
+
+        self::assertEqualsCanonicalizing(
+            [RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class],
+            array_keys($container->findTaggedServiceIds('console.command')),
+        );
+        self::assertArrayHasKey(ValidCarveValidator::class, $container->findTaggedServiceIds('validator.constraint_validator'));
+    }
+
+    public function testCommandsResolveFromACompiledContainer(): void
+    {
+        $container = $this->container([], compile: false);
+        $container->addCompilerPass(new AddConsoleCommandPass());
+        $container->compile();
+        $loader = $container->get('console.command_loader');
+        self::assertInstanceOf(CommandLoaderInterface::class, $loader);
+
+        foreach (['carve:render', 'carve:lint', 'carve:fmt', 'carve:convert'] as $name) {
+            self::assertSame($name, $loader->get($name)->getName());
+        }
     }
 
     /**

@@ -114,6 +114,58 @@ profiles apply to every output format.
 against that root, and a path outside it is refused, so a template never reads an
 arbitrary file.
 
+### Console commands
+
+```bash
+bin/console carve:render docs/page.crv                     # HTML to stdout
+bin/console carve:render docs/page.crv --format=text       # html, text, markdown or ansi
+bin/console carve:render docs/page.crv --preset=comment -o page.html
+
+bin/console carve:lint docs/                               # every *.crv below docs/
+bin/console carve:lint docs/book.crv --include-root=docs   # also lint included files
+
+bin/console carve:fmt docs/page.crv                        # print the canonical form
+bin/console carve:fmt docs/ --check                        # fail if a file is not formatted
+bin/console carve:fmt docs/ --write --align-tables         # rewrite in place, pad tables
+
+bin/console carve:convert README.md -o README.crv          # markdown, html or djot
+bin/console carve:convert page.html --from=html
+```
+
+`carve:render` uses the bundle configuration and expands includes when
+`include_root` is set. `carve:lint` runs every carve-php document lint rule and exits
+non-zero on findings, so it fits a CI step. `carve:fmt --check` exits non-zero when a
+file differs from its canonical form; `--write` and `--check` cannot be combined.
+`carve:convert` guesses the input format from the extension (`.md`, `.html`, `.djot`)
+unless `--from` names it.
+
+### Validation
+
+With `symfony/validator` installed, the `ValidCarve` constraint checks that a value
+parses as Carve:
+
+```php
+use MarkupCarve\SymfonyCarve\Validator\ValidCarve;
+
+final class Comment
+{
+    #[ValidCarve(preset: 'comment', maxLength: 5000, lint: true)]
+    public string $body = '';
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `preset` | `null` | The markup has to fit this profile: `full`, `article`, `comment` or `minimal`. |
+| `strict` | `false` | Parse warnings count as violations. |
+| `lint` | `false` | Lint findings count as violations. |
+| `maxLength` | `null` | Maximum length in characters. |
+| `message` | see below | Violation message; `{{ error }}` is replaced with the reason. |
+
+The default message is `This value is not valid Carve markup: {{ error }}`. Violation
+codes are `ValidCarve::INVALID_ERROR`, `TOO_LONG_ERROR` and `DISALLOWED_ERROR`. `null`
+and the empty string pass, so combine it with `NotBlank` when a value is required.
+
 ## Configuration
 
 ```yaml

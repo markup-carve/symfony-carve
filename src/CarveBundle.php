@@ -7,11 +7,17 @@ namespace MarkupCarve\SymfonyCarve;
 use MarkupCarve\Carve\Profile;
 use MarkupCarve\Carve\Renderer\RenderMode;
 use MarkupCarve\Carve\SafeMode;
+use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
+use MarkupCarve\SymfonyCarve\Command\FormatCommand;
+use MarkupCarve\SymfonyCarve\Command\LintCommand;
+use MarkupCarve\SymfonyCarve\Command\RenderCommand;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
+use MarkupCarve\SymfonyCarve\Validator\ValidCarveValidator;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Symfony\Component\Validator\ConstraintValidator;
 use Twig\Extension\AbstractExtension;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
@@ -180,6 +186,17 @@ final class CarveBundle extends AbstractBundle
             ->public();
 
         $services->set(CarveTools::class)->public();
+
+        foreach ([RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class] as $command) {
+            $services->set($command)->autowire()->tag('console.command');
+        }
+
+        // symfony/validator is optional; the constraint only exists with it.
+        if (class_exists(ConstraintValidator::class)) {
+            $services->set(ValidCarveValidator::class)
+                ->args([service(CarveTools::class)])
+                ->tag('validator.constraint_validator');
+        }
 
         // Register the Twig extension only when Twig is installed, so the
         // bundle works in non-Twig apps without a hard dependency.
