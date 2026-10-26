@@ -15,7 +15,7 @@ composer require markup-carve/symfony-carve
 ## Usage
 
 ```twig
-{{ article.body|carve }}
+{{ '# Hello'|carve }}
 ```
 
 ## Documentation
