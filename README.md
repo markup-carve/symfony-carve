@@ -22,7 +22,3 @@ composer require markup-carve/symfony-carve
 
 - [Carve documentation](https://markup-carve.github.io/carve/)
 - [Documentation index](docs/README.md)
-
-## License
-
-[MIT](LICENSE)
