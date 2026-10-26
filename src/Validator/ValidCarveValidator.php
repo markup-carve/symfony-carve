@@ -51,7 +51,7 @@ final class ValidCarveValidator extends ConstraintValidator
 
         try {
             $converter->parse($value);
-        } catch (ParseException | LengthException $exception) {
+        } catch (ParseException|LengthException $exception) {
             $this->fail($constraint, $exception->getMessage(), ValidCarve::INVALID_ERROR);
 
             return;
