@@ -11,6 +11,7 @@ use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use MarkupCarve\SymfonyCarve\Command\FormatCommand;
 use MarkupCarve\SymfonyCarve\Command\LintCommand;
 use MarkupCarve\SymfonyCarve\Command\RenderCommand;
+use MarkupCarve\SymfonyCarve\Command\TraceCommand;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
 use MarkupCarve\SymfonyCarve\Validator\ValidCarveValidator;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -187,7 +188,7 @@ final class CarveBundle extends AbstractBundle
 
         $services->set(CarveTools::class)->public();
 
-        foreach ([RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class] as $command) {
+        foreach ([RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class, TraceCommand::class] as $command) {
             $services->set($command)->autowire()->tag('console.command');
         }
 

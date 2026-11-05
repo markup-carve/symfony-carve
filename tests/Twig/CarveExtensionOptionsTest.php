@@ -38,8 +38,8 @@ final class CarveExtensionOptionsTest extends TestCase
     {
         $source = "| a | bbb |\n| --- | --- |\n| cccc | d |\n";
 
-        self::assertStringContainsString('| a    | bbb |', $this->render('{{ source|carve_format(align_tables = true)|raw }}', ['source' => $source]));
-        self::assertStringNotContainsString('| a    | bbb |', $this->render('{{ source|carve_format|raw }}', ['source' => $source]));
+        self::assertStringContainsString('| cccc | d    |', $this->render('{{ source|carve_format(align_tables = true)|raw }}', ['source' => $source]));
+        self::assertStringNotContainsString('| cccc | d    |', $this->render('{{ source|carve_format|raw }}', ['source' => $source]));
     }
 
     public function testFormatOutputIsEscaped(): void

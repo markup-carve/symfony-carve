@@ -48,6 +48,9 @@ public function show(CarveRenderer $carve): Response
 }
 ```
 
+Every HTML method returns the fragment without a final newline, as the Carve HTML API
+specifies; add your own line ending when writing an output file.
+
 `withOptions()` accepts `safe_mode`, `raw_html`, `profile` (or its alias `preset`),
 `on_disallowed`, `mode`, `soft_break_mode`, `xhtml`, `source_lines` and
 `smart_typography`. Any other key throws, so a typo never renders silently with the
@@ -67,10 +70,12 @@ $tools->fromMarkdown($markdown);
 $tools->fromHtml($html);
 $tools->fromDjot($djot);
 $tools->import($source, 'markdown');          // markdown, html or djot
+$tools->trace($source);                       // block decision trace as JSON lines
 ```
 
 `lint()` runs every rule of carve-php's `DocumentLinter`. With an include root,
-findings in included files carry `file` and `includedBy`.
+findings in included files carry `file` and `includedBy`. Suppression comments in the
+source (`%% carve-lint-disable`, `-enable`, `-disable-line`, `-disable-next-line`) apply.
 
 ### Twig
 
@@ -124,6 +129,8 @@ bin/console carve:fmt docs/ --write --align-tables         # rewrite in place, p
 
 bin/console carve:convert README.md -o README.crv          # markdown, html or djot
 bin/console carve:convert page.html --from=html
+
+bin/console carve:trace docs/page.crv                      # block decision trace, JSON lines
 ```
 
 `carve:render` uses the bundle configuration and expands includes when
@@ -131,7 +138,8 @@ bin/console carve:convert page.html --from=html
 non-zero on findings, so it fits a CI step. `carve:fmt --check` exits non-zero when a
 file differs from its canonical form; `--write` and `--check` cannot be combined.
 `carve:convert` guesses the input format from the extension (`.md`, `.html`, `.djot`)
-unless `--from` names it.
+unless `--from` names it. `carve:trace` prints the trace `carve trace` prints, one
+JSON record per source line, which helps when a block does not parse as expected.
 
 ### Validation
 

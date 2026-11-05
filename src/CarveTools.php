@@ -9,6 +9,7 @@ use MarkupCarve\Carve\CarveConverter;
 use MarkupCarve\Carve\Converter\DjotToCarve;
 use MarkupCarve\Carve\Converter\HtmlToCarve;
 use MarkupCarve\Carve\Converter\MarkdownToCarve;
+use MarkupCarve\Carve\DecisionTrace;
 use MarkupCarve\Carve\Lint\DocumentLinter;
 use MarkupCarve\Carve\Lint\IncludeLinter;
 use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
@@ -58,6 +59,15 @@ final class CarveTools
         }
 
         return (new IncludeLinter())->lint($source, [], $resolver, $sourcePath);
+    }
+
+    /**
+     * The block decision trace as JSON lines: a header, then one record per
+     * source line, as `carve trace` prints it.
+     */
+    public function trace(string $source): string
+    {
+        return DecisionTrace::jsonLines($source);
     }
 
     public function fromMarkdown(string $source): string
