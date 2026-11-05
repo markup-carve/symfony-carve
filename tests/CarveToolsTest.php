@@ -27,7 +27,7 @@ final class CarveToolsTest extends TestCase
         $aligned = $tools->format($source, true);
 
         self::assertNotSame($tools->format($source), $aligned);
-        self::assertStringContainsString('| a    | bbb |', $aligned);
+        self::assertStringContainsString('| cccc | d    |', $aligned);
     }
 
     public function testLintReportsDocumentLinterFindings(): void

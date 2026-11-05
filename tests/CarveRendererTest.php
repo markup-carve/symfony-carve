@@ -178,6 +178,24 @@ final class CarveRendererTest extends TestCase
         }
     }
 
+    public function testEveryHtmlApiReturnsTheFragmentWithoutAFinalNewline(): void
+    {
+        $root = sys_get_temp_dir() . '/symfony-carve-' . bin2hex(random_bytes(6));
+        mkdir($root);
+        file_put_contents($root . '/main.crv', "# Main\n\nText.\n");
+
+        try {
+            $expected = "<section id=\"Main\">\n  <h1>Main</h1>\n  <p>Text.</p>\n</section>";
+            self::assertSame($expected, (new CarveRenderer())->render("# Main\n\nText.\n"));
+            self::assertSame($expected, (new CarveRenderer())->renderResult("# Main\n\nText.\n")->html);
+            self::assertSame($expected, (new CarveRenderer())->renderFile($root . '/main.crv'));
+            self::assertSame($expected, (new CarveRenderer(includeRoot: $root))->renderFile($root . '/main.crv'));
+        } finally {
+            unlink($root . '/main.crv');
+            rmdir($root);
+        }
+    }
+
     public function testRendersHeading(): void
     {
         $html = (new CarveRenderer())->render('# Hello');

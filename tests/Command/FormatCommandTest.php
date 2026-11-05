@@ -52,9 +52,9 @@ final class FormatCommandTest extends CommandTestCase
         $tester = new CommandTester(new FormatCommand(new CarveTools()));
 
         $tester->execute(['paths' => [$path]]);
-        self::assertStringNotContainsString('| a    | bbb |', $tester->getDisplay());
+        self::assertStringNotContainsString('| cccc | d    |', $tester->getDisplay());
         $tester->execute(['paths' => [$path], '--align-tables' => true]);
-        self::assertStringContainsString('| a    | bbb |', $tester->getDisplay());
+        self::assertStringContainsString('| cccc | d    |', $tester->getDisplay());
     }
 
     public function testWriteAndCheckAreExclusive(): void

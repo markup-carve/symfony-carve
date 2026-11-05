@@ -4,7 +4,7 @@
 [![PHP](https://img.shields.io/packagist/php-v/markup-carve/symfony-carve)](https://packagist.org/packages/markup-carve/symfony-carve)
 [![License](https://img.shields.io/packagist/l/markup-carve/symfony-carve)](LICENSE)
 
-Symfony bundle that renders Carve through carve-php 0.1.14 or later. Twig filters, services, and console commands share the same renderer. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
+Symfony bundle that renders Carve through carve-php 0.1.17 or later. Twig filters, services, and console commands share the same renderer. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
 
 ## Install
 

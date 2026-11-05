@@ -315,7 +315,7 @@ final class CarveRenderer
             $converter = $this->htmlConverter();
             $expansion = $this->expand($converter, $sourcePath, $source);
             $report = [
-                'value' => $converter->render($expansion->document),
+                'value' => self::htmlFragment($converter->render($expansion->document)),
                 'warnings' => $expansion->warnings,
                 'dependencies' => $expansion->dependencies,
                 'suppressedWarnings' => $expansion->suppressedWarnings,
@@ -443,9 +443,18 @@ final class CarveRenderer
         return $states;
     }
 
+    /**
+     * The HTML API returns a fragment without the document's final LF, as
+     * `CarveConverter::convert()` does; `render(Document)` keeps it.
+     */
+    private static function htmlFragment(string $html): string
+    {
+        return str_ends_with($html, "\n") ? substr($html, 0, -1) : $html;
+    }
+
     private function result(string $source, CarveConverter $converter, Document $document): RenderedCarve
     {
-        $html = $converter->render($document);
+        $html = self::htmlFragment($converter->render($document));
         $toc = [];
         $frontmatter = null;
         foreach ($converter->getExtensions() as $extension) {
