@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 0.1.7 - 2026-11-12
+
+### Breaking
+
+- HTML from `render()`, `renderResult()`, `renderFile()` and `renderFileWithReport()`
+  no longer ends with a final line feed, as the Carve HTML API specifies (#31)
+- HTML import in `CarveTools` and `carve:convert` no longer reads `data-djot-*`
+  attributes (markup-carve/carve#5735)
+- The lint rule alias `a11y/heading-jump` is gone; use `heading-level-skip`
+
+### Improvements
+
+- Add `carve:trace` and `CarveTools::trace()`, which print carve-php's decision
+  trace as JSON lines (#31)
+- `format()`, `carve_format` and `carve:fmt` write `|=` header cells, `***` thematic
+  breaks and braced table alignment (`|={>}`); the old `|=>` spelling is still read
+  and is reported by the `deprecated-cell-alignment` lint rule (#31)
+- Require carve-php `^0.1.17` (#31)
+
 ## 0.1.6 - 2026-10-23
 
 ### Improvements
