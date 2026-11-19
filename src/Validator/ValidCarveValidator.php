@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Validator;
 
-use LengthException;
-use MarkupCarve\Carve\CarveConverter;
-use MarkupCarve\Carve\Exception\ParseException;
-use MarkupCarve\Carve\Profile;
+use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve2\CarveException;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use Stringable;
 use Symfony\Component\Validator\Constraint;
@@ -40,30 +38,22 @@ final class ValidCarveValidator extends ConstraintValidator
             return;
         }
 
-        $profile = match ($constraint->preset) {
-            null => null,
-            'full' => Profile::full(),
-            'article' => Profile::article(),
-            'comment' => Profile::comment(),
-            default => Profile::minimal(),
-        };
-        $converter = new CarveConverter(warnings: true, profile: $profile);
-
         try {
-            $converter->parse($value);
-        } catch (ParseException|LengthException $exception) {
+            $result = Carve2::renderWithDiagnostics($value, ['profile' => $constraint->preset ?? 'full']);
+        } catch (CarveException $exception) {
             $this->fail($constraint, $exception->getMessage(), ValidCarve::INVALID_ERROR);
 
             return;
         }
-        if ($converter->hasProfileViolations()) {
-            $this->fail($constraint, sprintf('markup is not allowed by the %s preset', $constraint->preset), ValidCarve::DISALLOWED_ERROR);
+        foreach ($result->diagnostics as $diagnostic) {
+            if ($diagnostic->channel === 'render-loss') {
+                $this->fail($constraint, sprintf('markup is not allowed by the %s preset', $constraint->preset), ValidCarve::DISALLOWED_ERROR);
 
-            return;
+                return;
+            }
         }
-        if ($constraint->strict && $converter->hasWarnings()) {
-            $warning = $converter->getWarnings()[0] ?? null;
-            $this->fail($constraint, $warning?->getMessage() ?? 'parse warnings detected', ValidCarve::INVALID_ERROR);
+        if ($constraint->strict && $result->diagnostics !== []) {
+            $this->fail($constraint, $result->diagnostics[0]->message, ValidCarve::INVALID_ERROR);
 
             return;
         }

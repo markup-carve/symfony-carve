@@ -12,22 +12,26 @@ use Symfony\Component\Console\Tester\CommandTester;
 final class FormatCommandTest extends CommandTestCase
 {
     /**
+     * U-055: native 0.2 header cells replace the GFM separator row.
+     *
      * @var string
      */
-    private const TABLE = "| a | bbb |\n| --- | --- |\n| cccc | d |\n";
+    private const TABLE = "|= a |= bbb |\n| cccc | d |\n";
 
     public function testPrintsTheCanonicalForm(): void
     {
         $tester = new CommandTester(new FormatCommand(new CarveTools()));
 
         self::assertSame(Command::SUCCESS, $tester->execute(['paths' => [$this->file('a.crv', "#   Title\n")]]));
-        self::assertSame("# Title\n", $tester->getDisplay());
+        // C2-W-001 and U-043: Carve2 writes the canonical = heading marker.
+        self::assertSame("= Title\n", $tester->getDisplay());
     }
 
     public function testCheckFailsOnUnformattedFilesWithoutChangingThem(): void
     {
         $path = $this->file('a.crv', "#   Title\n");
-        $this->file('nested/ok.crv', "# Fine\n");
+        // C2-W-001: the canonical 0.2 heading begins with =.
+        $this->file('nested/ok.crv', "= Fine\n");
         $tester = new CommandTester(new FormatCommand(new CarveTools()));
 
         self::assertSame(Command::FAILURE, $tester->execute(['paths' => [$this->dir], '--check' => true]));
@@ -42,7 +46,8 @@ final class FormatCommandTest extends CommandTestCase
         $tester = new CommandTester(new FormatCommand(new CarveTools()));
 
         self::assertSame(Command::SUCCESS, $tester->execute(['paths' => [$path], '--write' => true]));
-        self::assertSame("# Title\n", file_get_contents($path));
+        // C2-W-001: in-place formatting uses the same canonical heading.
+        self::assertSame("= Title\n", file_get_contents($path));
         self::assertSame(Command::SUCCESS, $tester->execute(['paths' => [$path], '--check' => true]));
     }
 

@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve;
 
-use MarkupCarve\Carve\Profile;
-use MarkupCarve\Carve\Renderer\RenderMode;
-use MarkupCarve\Carve\SafeMode;
 use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use MarkupCarve\SymfonyCarve\Command\FormatCommand;
 use MarkupCarve\SymfonyCarve\Command\LintCommand;
@@ -28,99 +25,51 @@ final class CarveBundle extends AbstractBundle
     {
         $definition->rootNode()
             ->children()
-                ->scalarNode('safe_mode')
-                    ->info('HTML sanitization: true, false or "strict". Keep it on for untrusted input.')
-                    ->defaultTrue()
-                    ->validate()
-                        ->ifTrue(static fn (mixed $value): bool => !in_array($value, [true, false, 'strict'], true))
-                        ->thenInvalid('carve.safe_mode must be true, false or "strict", got %s.')
-                    ->end()
+                ->booleanNode('raw_html')
+                    ->info('Allow trusted raw HTML. Disabled by default.')
+                    ->defaultFalse()
                 ->end()
-                ->enumNode('raw_html')
-                    ->info('How raw HTML is treated when safe_mode is true.')
-                    ->values([
-                        SafeMode::RAW_HTML_STRIP,
-                        SafeMode::RAW_HTML_ESCAPE,
-                        SafeMode::RAW_HTML_ALLOW,
-                    ])
-                    ->defaultValue(SafeMode::RAW_HTML_STRIP)
+                ->arrayNode('url_policy')
+                    ->info('Optional URL scheme policy; the engine secure default applies when empty.')
+                    ->variablePrototype()->end()
+                    ->defaultValue([])
                 ->end()
                 ->enumNode('profile')
-                    ->info('Restrict the available markup features for a rendering context.')
-                    ->values([null, 'full', 'article', 'comment', 'minimal'])
-                    ->defaultNull()
-                ->end()
-                ->enumNode('on_disallowed')
-                    ->info('What the profile does with markup it disallows: strip, to_text or error.')
-                    ->values([null, Profile::ACTION_STRIP, Profile::ACTION_TO_TEXT, Profile::ACTION_ERROR])
-                    ->defaultNull()
+                    ->values(['full', 'article', 'comment', 'minimal'])
+                    ->defaultValue('full')
                 ->end()
                 ->enumNode('mode')
-                    ->info('Render mode. "static" applies graceful degradation for print, PDF and email.')
-                    ->values(RenderMode::ALL)
-                    ->defaultValue(RenderMode::INTERACTIVE)
+                    ->values(['interactive', 'static'])
+                    ->defaultValue('interactive')
                 ->end()
-                ->enumNode('soft_break_mode')
-                    ->info('How soft breaks render: newline, space or br. Null keeps the engine default.')
-                    ->values([null, 'newline', 'space', 'br'])
-                    ->defaultNull()
+                ->booleanNode('sections')->defaultTrue()->end()
+                ->enumNode('heading_ids')
+                    ->values(['off', 'keep-case', 'lower', 'ascii', 'ascii-lower', 'ascii-strict', 'ascii-strict-lower'])
+                    ->defaultValue('keep-case')
                 ->end()
-                ->booleanNode('xhtml')
-                    ->info('Output XHTML-compatible self-closing tags.')
-                    ->defaultFalse()
-                ->end()
-                ->booleanNode('source_lines')
-                    ->info('Add 1-based data-source-line attributes for editor scroll-sync.')
-                    ->defaultFalse()
-                ->end()
-                ->scalarNode('smart_typography')
-                    ->info('Force smart typography on or off. Null keeps the engine default.')
-                    ->defaultNull()
-                    ->validate()
-                        ->ifTrue(static fn (mixed $value): bool => !is_bool($value))
-                        ->thenInvalid('carve.smart_typography must be true, false or null, got %s.')
-                    ->end()
-                ->end()
+                ->booleanNode('source_lines')->defaultFalse()->end()
+                ->booleanNode('smart_typography')->defaultTrue()->end()
                 ->arrayNode('symbols')
-                    ->info('Trusted HTML replacements for :name: symbols, inserted without escaping.')
                     ->useAttributeAsKey('name')
                     ->scalarPrototype()->end()
                     ->defaultValue([])
                 ->end()
                 ->arrayNode('labels')
-                    ->info('Overrides for the generated UI labels, keyed by label name.')
                     ->useAttributeAsKey('name')
                     ->scalarPrototype()->end()
                     ->defaultValue([])
                 ->end()
-                ->arrayNode('extensions')
-                    ->info('carve-php extensions: a type name, or a map with "type" and the extension options in snake_case.')
-                    ->variablePrototype()
-                        ->validate()
-                            ->ifTrue(static fn (mixed $value): bool => !is_string($value) && !(is_array($value) && is_string($value['type'] ?? null)))
-                            ->thenInvalid('A carve.extensions entry must be a type name or a map with a "type" key, got %s.')
-                        ->end()
-                    ->end()
+                ->arrayNode('diagrams')
+                    ->scalarPrototype()->end()
                     ->defaultValue([])
                 ->end()
-                ->arrayNode('diagrams')
-                    ->info('Diagram/extension fenced-block presets to enable. Each needs a client-side renderer on the page (see README).')
-                    ->enumPrototype()
-                        ->values([
-                            'mermaid',
-                            'plantuml',
-                            'd2',
-                            'graphviz',
-                            'wavedrom',
-                            'vega_lite',
-                            'chart',
-                            'abc',
-                        ])
-                    ->end()
+                ->arrayNode('extensions')
+                    ->info('Carve2 extension definitions or a supported type such as tabs.')
+                    ->variablePrototype()->end()
                     ->defaultValue([])
                 ->end()
                 ->scalarNode('include_root')
-                    ->info('Absolute containment root for opt-in file includes. String and Twig rendering remain literal. The resolver refuses a relative root rather than resolving it against the working directory.')
+                    ->info('Absolute containment root for opt-in file includes.')
                     ->defaultNull()
                 ->end()
                 ->arrayNode('cache')
@@ -164,21 +113,20 @@ final class CarveBundle extends AbstractBundle
 
         $services->set(CarveRenderer::class)
             ->args([
-                '$safeMode' => $config['safe_mode'],
-                '$rawHtmlMode' => $config['raw_html'],
-                '$diagrams' => $config['diagrams'],
+                '$rawHtml' => $config['raw_html'],
+                '$urlPolicy' => $config['url_policy'],
                 '$profile' => $config['profile'],
                 '$includeRoot' => $config['include_root'],
                 '$logger' => service('logger')->nullOnInvalid(),
                 '$mode' => $config['mode'],
-                '$softBreakMode' => $config['soft_break_mode'],
-                '$xhtml' => $config['xhtml'],
+                '$sections' => $config['sections'],
+                '$headingIds' => $config['heading_ids'],
                 '$symbols' => $config['symbols'],
                 '$sourceLines' => $config['source_lines'],
                 '$smartTypography' => $config['smart_typography'],
                 '$labels' => $config['labels'],
-                '$onDisallowed' => $config['on_disallowed'],
                 '$extensions' => $config['extensions'],
+                '$diagrams' => $config['diagrams'],
                 '$cache' => $cache['enabled'] ? service($cache['pool']) : null,
                 '$cacheTtl' => $cache['ttl'],
                 '$cachePrefix' => $cache['prefix'],

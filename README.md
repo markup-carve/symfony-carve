@@ -1,24 +1,22 @@
 # symfony-carve
 
-[![CI](https://github.com/markup-carve/symfony-carve/actions/workflows/ci.yml/badge.svg)](https://github.com/markup-carve/symfony-carve/actions/workflows/ci.yml)
-[![PHP](https://img.shields.io/packagist/php-v/markup-carve/symfony-carve)](https://packagist.org/packages/markup-carve/symfony-carve)
-[![License](https://img.shields.io/packagist/l/markup-carve/symfony-carve)](LICENSE)
+Symfony bundle for Carve 0.2 through the unreleased carve-php Carve2 API. It provides Twig filters, services, validation, and console commands for rendering, formatting, linting, and HTML import.
 
-Symfony bundle that renders Carve through carve-php 0.1.17 or later. Twig filters, services, and console commands share the same renderer. Read the [Carve documentation](https://markup-carve.github.io/carve/) for the language syntax.
+This branch is a preview. Its Composer dependency is pinned to a specific `next2` engine commit and is not a registry release.
 
-## Install
+## Install from git
+
+Add this repository as a Composer VCS repository and require its `next2` branch. Composer will fetch the pinned Carve2 engine commit declared in [composer.json](composer.json).
 
 ```sh
-composer require markup-carve/symfony-carve
+composer config repositories.symfony-carve vcs https://github.com/markup-carve/symfony-carve.git
+composer require markup-carve/symfony-carve:dev-next2
 ```
 
-## Usage
+## Use
 
 ```twig
-{{ '# Hello'|carve }}
+{{ '= Hello'|carve }}
 ```
 
-## Documentation
-
-- [Carve documentation](https://markup-carve.github.io/carve/)
-- [Documentation index](docs/README.md)
+Raw HTML is disabled and the Carve2 URL policy denies unsafe schemes by default. See the [guide](docs/guide.md) for configuration, includes, commands, and current API gaps.
