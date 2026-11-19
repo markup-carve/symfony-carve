@@ -17,14 +17,15 @@ final class CarveExtensionOptionsTest extends TestCase
     public function testFilterAndFunctionTakeRenderOptions(): void
     {
         $out = $this->render(
-            "{{ source|carve({preset: 'comment'}) }}|{{ carve(source, {soft_break_mode: 'br'}) }}",
+            "{{ source|carve({preset: 'comment'}) }}|{{ carve(source, {sections: false}) }}",
             ['source' => "# Title\na\nb"],
         );
         [$filter, $function] = explode('|', $out);
 
         self::assertStringNotContainsString('<h1', $filter);
         self::assertStringContainsString('<h1', $function);
-        self::assertStringContainsString('<br>', $function);
+        // C2-H-137: section rendering is the supported per-call switch.
+        self::assertStringNotContainsString('<section', $function);
     }
 
     public function testAnUnknownOptionFailsTheTemplate(): void
@@ -36,7 +37,8 @@ final class CarveExtensionOptionsTest extends TestCase
 
     public function testFormatFilterAlignsTablesOnRequest(): void
     {
-        $source = "| a | bbb |\n| --- | --- |\n| cccc | d |\n";
+        // U-055: use 0.2 native table header syntax.
+        $source = "|= a |= bbb |\n| cccc | d |\n";
 
         self::assertStringContainsString('| cccc | d    |', $this->render('{{ source|carve_format(align_tables = true)|raw }}', ['source' => $source]));
         self::assertStringNotContainsString('| cccc | d    |', $this->render('{{ source|carve_format|raw }}', ['source' => $source]));
@@ -52,7 +54,8 @@ final class CarveExtensionOptionsTest extends TestCase
         $out = $this->render(
             "{% set doc = carve_document(source) %}{{ doc.meta('title') }}|{% for h in doc.toc %}{{ h.text }},{% endfor %}|{{ doc.html|raw }}",
             ['source' => "---json\n{\"title\": \"Hi\"}\n---\n\n# One\n"],
-            new CarveRenderer(extensions: ['frontmatter']),
+            // C2-A-021: frontmatter is a core 0.2 tree node.
+            new CarveRenderer(),
         );
 
         self::assertStringStartsWith('Hi|One,|', $out);

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Tests\Command;
 
+use MarkupCarve\Carve2\Carve2;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use MarkupCarve\SymfonyCarve\Command\TraceCommand;
+use ReflectionClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -13,6 +15,10 @@ final class TraceCommandTest extends CommandTestCase
 {
     public function testPrintsOneJsonRecordPerLineAfterTheHeader(): void
     {
+        // C2-H-137: pending Carve2 API, see carve-php#5241.
+        if (!(new ReflectionClass(Carve2::class))->hasMethod('decisionTrace')) {
+            $this->markTestSkipped('Pending carve-php#5241.');
+        }
         $tester = new CommandTester(new TraceCommand(new CarveTools()));
 
         self::assertSame(Command::SUCCESS, $tester->execute(['path' => $this->file('a.crv', "- one\n- two\n")]));
@@ -26,6 +32,10 @@ final class TraceCommandTest extends CommandTestCase
 
     public function testWritesToAFile(): void
     {
+        // C2-H-137: pending Carve2 API, see carve-php#5241.
+        if (!(new ReflectionClass(Carve2::class))->hasMethod('decisionTrace')) {
+            $this->markTestSkipped('Pending carve-php#5241.');
+        }
         $target = $this->dir . '/trace.jsonl';
         $tester = new CommandTester(new TraceCommand(new CarveTools()));
 

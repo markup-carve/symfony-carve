@@ -5,19 +5,11 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\CarveConverter;
-use MarkupCarve\Carve\Converter\DjotToCarve;
-use MarkupCarve\Carve\Converter\HtmlToCarve;
-use MarkupCarve\Carve\Converter\MarkdownToCarve;
-use MarkupCarve\Carve\DecisionTrace;
-use MarkupCarve\Carve\Lint\DocumentLinter;
-use MarkupCarve\Carve\Lint\IncludeLinter;
-use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
+use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve2\Include\FileResolver;
 use RuntimeException;
+use Throwable;
 
-/**
- * Source-level Carve operations: format, lint and import.
- */
 final class CarveTools
 {
     /**
@@ -25,12 +17,9 @@ final class CarveTools
      */
     public const IMPORT_FORMATS = ['markdown', 'html', 'djot'];
 
-    /**
-     * Canonical Carve source, as `carve fmt` prints it.
-     */
     public function format(string $source, bool $alignTables = false): string
     {
-        return CarveConverter::toCarve($source, $alignTables);
+        return Carve2::format($source, ['alignTables' => $alignTables]);
     }
 
     public function isFormatted(string $source, bool $alignTables = false): bool
@@ -39,55 +28,69 @@ final class CarveTools
     }
 
     /**
-     * Findings from every carve-php document lint rule. With an include root,
-     * included files are linted too and their findings carry `file` and
-     * `includedBy`.
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return list<\MarkupCarve\Carve\Lint\LintWarning>
+     * @return list<\MarkupCarve\SymfonyCarve\LintFinding>
      */
     public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
         if ($includeRoot === null) {
-            return (new DocumentLinter())->lint($source);
+            return $this->findings(Carve2::lint($source), $source);
         }
         try {
-            $resolver = new FilesystemIncludeResolver($includeRoot);
-        } catch (RuntimeException $exception) {
+            $resolver = FileResolver::forRoot($includeRoot);
+        } catch (Throwable $exception) {
             throw new InvalidArgumentException('Carve include root: ' . $exception->getMessage(), 0, $exception);
         }
 
-        return (new IncludeLinter())->lint($source, [], $resolver, $sourcePath);
+        return $this->findings(Carve2::lint($source, ['includes' => ['resolver' => $resolver, 'file' => $sourcePath]]), $source, $includeRoot);
     }
 
     /**
-     * The block decision trace as JSON lines: a header, then one record per
-     * source line, as `carve trace` prints it.
+     * @param array<\MarkupCarve\Carve2\Diagnostics\Diagnostic> $diagnostics
+     * @param string|null $root
+     * @param string $source
+     *
+     * @return list<\MarkupCarve\SymfonyCarve\LintFinding>
      */
+    private function findings(array $diagnostics, string $source, ?string $root = null): array
+    {
+        $result = [];
+        foreach ($diagnostics as $diagnostic) {
+            $file = $diagnostic->file;
+            $content = $file === null ? $source : @file_get_contents((string)$root . '/' . $file);
+            $before = is_string($content) ? substr($content, 0, max(0, $diagnostic->startOffset)) : '';
+            $last = strrpos($before, "\n");
+            $result[] = new LintFinding(
+                $diagnostic->code,
+                $diagnostic->message,
+                $file,
+                substr_count($before, "\n") + 1,
+                strlen($last === false ? $before : substr($before, $last + 1)) + 1,
+            );
+        }
+
+        return $result;
+    }
+
     public function trace(string $source): string
     {
-        return DecisionTrace::jsonLines($source);
+        throw new RuntimeException('Carve 0.2 decision trace is not available yet.');
     }
 
     public function fromMarkdown(string $source): string
     {
-        return (new MarkdownToCarve())->convert($source);
+        throw new RuntimeException('Carve 0.2 Markdown importer is not available yet.');
     }
 
     public function fromHtml(string $source): string
     {
-        return (new HtmlToCarve())->convert($source);
+        return Carve2::importHtml($source)->source;
     }
 
     public function fromDjot(string $source): string
     {
-        return (new DjotToCarve())->convert($source);
+        throw new RuntimeException('Carve 0.2 Djot importer is not available yet.');
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     */
     public function import(string $source, string $from): string
     {
         return match ($from) {
