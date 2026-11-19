@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -229,8 +229,8 @@ final class CarveRendererTest extends TestCase
 
     public function testRendersPlainText(): void
     {
-        // C2-H-137: pending Carve2 API, see carve-php#5235.
-        if (!Carve2::writers()->has('text')) {
+        // C2-H-137: pending Carve API, see carve-php#5235.
+        if (!Carve::writers()->has('text')) {
             $this->markTestSkipped('Pending carve-php#5235.');
         }
         $text = (new CarveRenderer())->renderText('# Hello *world*');
@@ -240,8 +240,8 @@ final class CarveRendererTest extends TestCase
 
     public function testRendersMarkdown(): void
     {
-        // C2-H-137: pending Carve2 API, see carve-php#5235.
-        if (!Carve2::writers()->has('markdown')) {
+        // C2-H-137: pending Carve API, see carve-php#5235.
+        if (!Carve::writers()->has('markdown')) {
             $this->markTestSkipped('Pending carve-php#5235.');
         }
         $markdown = (new CarveRenderer())->renderMarkdown('# Hello *world*');
@@ -266,8 +266,8 @@ final class CarveRendererTest extends TestCase
      */
     public function testProfileAppliesToTextAndMarkdownRenderers(): void
     {
-        // C2-H-137: pending Carve2 API, see carve-php#5235.
-        if (!Carve2::writers()->has('text')) {
+        // C2-H-137: pending Carve API, see carve-php#5235.
+        if (!Carve::writers()->has('text')) {
             $this->markTestSkipped('Pending carve-php#5235.');
         }
         $renderer = new CarveRenderer(profile: 'minimal');

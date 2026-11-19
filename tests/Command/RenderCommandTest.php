@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Tests\Command;
 
-use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\Command\RenderCommand;
 use Symfony\Component\Console\Command\Command;
@@ -22,8 +22,8 @@ final class RenderCommandTest extends CommandTestCase
 
     public function testRendersTextMarkdownAndAnsi(): void
     {
-        // C2-H-137: pending Carve2 API, see carve-php#5235.
-        if (!Carve2::writers()->has('text') || !Carve2::writers()->has('markdown') || !Carve2::writers()->has('ansi')) {
+        // C2-H-137: pending Carve API, see carve-php#5235.
+        if (!Carve::writers()->has('text') || !Carve::writers()->has('markdown') || !Carve::writers()->has('ansi')) {
             $this->markTestSkipped('Pending carve-php#5235.');
         }
         $path = $this->file('a.crv', "# Title\n\n*bold*\n");
@@ -40,7 +40,7 @@ final class RenderCommandTest extends CommandTestCase
     public function testExpandsIncludesBelowTheConfiguredRoot(): void
     {
         // C2-T-005: the text writer is pending, see carve-php#5235.
-        if (!Carve2::writers()->has('text')) {
+        if (!Carve::writers()->has('text')) {
             $this->markTestSkipped('Pending carve-php#5235.');
         }
         $this->file('part.crv', "Included.\n");
@@ -51,7 +51,7 @@ final class RenderCommandTest extends CommandTestCase
         self::assertStringContainsString('Included.', $tester->getDisplay());
     }
 
-    public function testExpandsIncludesInHtmlOnCarve2(): void
+    public function testExpandsIncludesInHtmlOnCarve(): void
     {
         // C2-N-012: the 0.2 file resolver expands a contained file.
         $this->file('part.crv', "Included.\n");

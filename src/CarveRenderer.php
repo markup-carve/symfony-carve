@@ -6,13 +6,13 @@ namespace MarkupCarve\SymfonyCarve;
 
 use Closure;
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\CarveException;
-use MarkupCarve\Carve2\Diagnostics\Diagnostic;
-use MarkupCarve\Carve2\Include\FileResolver;
-use MarkupCarve\Carve2\Include\IncludeResolver;
-use MarkupCarve\Carve2\Node;
-use MarkupCarve\Carve2\Output\WriterRegistry;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\CarveException;
+use MarkupCarve\Carve\Diagnostics\Diagnostic;
+use MarkupCarve\Carve\Include\FileResolver;
+use MarkupCarve\Carve\Include\IncludeResolver;
+use MarkupCarve\Carve\Node;
+use MarkupCarve\Carve\Output\WriterRegistry;
 use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -75,7 +75,7 @@ final class CarveRenderer
      * @param array<string, string> $labels
      * @param array<mixed> $extensions
      * @param array<string> $diagrams
-     * @param \MarkupCarve\Carve2\Output\WriterRegistry|null $writers
+     * @param \MarkupCarve\Carve\Output\WriterRegistry|null $writers
      * @param \Symfony\Contracts\Cache\CacheInterface|null $cache
      * @param int|null $cacheTtl
      * @param string $cachePrefix
@@ -139,7 +139,7 @@ final class CarveRenderer
         }
         // Validate every value now, including those not used by a particular call.
         try {
-            Carve2::render('', $engineOptions);
+            Carve::render('', $engineOptions);
         } catch (CarveException $exception) {
             throw new InvalidArgumentException($exception->getMessage(), 0, $exception);
         }
@@ -188,7 +188,7 @@ final class CarveRenderer
 
     public function render(string $carve): string
     {
-        return $this->cached('render', hash('xxh3', $carve), fn (): string => Carve2::render($carve, $this->engineOptions));
+        return $this->cached('render', hash('xxh3', $carve), fn (): string => Carve::render($carve, $this->engineOptions));
     }
 
     public function renderResult(string $carve): RenderedCarve
@@ -199,7 +199,7 @@ final class CarveRenderer
             $frontmatter = null;
             $this->collectMetadata($tree, $toc, $frontmatter);
 
-            return new RenderedCarve($carve, Carve2::render($tree, $this->engineOptions), $toc, $frontmatter);
+            return new RenderedCarve($carve, Carve::render($tree, $this->engineOptions), $toc, $frontmatter);
         });
     }
 
@@ -220,7 +220,7 @@ final class CarveRenderer
 
     public function parse(string $carve): Node
     {
-        return Carve2::parse($carve, $this->parseOptions());
+        return Carve::parse($carve, $this->parseOptions());
     }
 
     public function renderFile(string $path): string
@@ -253,8 +253,8 @@ final class CarveRenderer
         $key = hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
         $compute = function () use ($sourcePath, $source): array {
             $options = $this->engineOptions + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]];
-            $result = Carve2::renderWithDiagnostics($source, $options);
-            $deps = Carve2::includeDependencies($source, $this->parseOptions() + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]]);
+            $result = Carve::renderWithDiagnostics($source, $options);
+            $deps = Carve::includeDependencies($source, $this->parseOptions() + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]]);
             $warnings = [];
             foreach ($result->diagnostics as $diagnostic) {
                 if ($diagnostic->code === 'include-unresolved') {
@@ -322,7 +322,7 @@ final class CarveRenderer
 
     private function writeTarget(string $target, string $source, ?string $path = null): string
     {
-        $registry = $this->writers ?? Carve2::writers();
+        $registry = $this->writers ?? Carve::writers();
         if (!$registry->has($target)) {
             throw new RuntimeException(sprintf('Carve %s writer not available yet.', $target));
         }
@@ -331,7 +331,7 @@ final class CarveRenderer
             $options['includes'] = ['resolver' => $this->includeResolver, 'file' => $path];
         }
 
-        return Carve2::writeTo($target, Carve2::parse($source, $options), $this->engineOptions, $registry);
+        return Carve::writeTo($target, Carve::parse($source, $options), $this->engineOptions, $registry);
     }
 
     /**
@@ -343,7 +343,7 @@ final class CarveRenderer
     }
 
     /**
-     * @param \MarkupCarve\Carve2\Node $node
+     * @param \MarkupCarve\Carve\Node $node
      * @param list<array{level: int, text: string, html: string, id: string}> $toc
      * @param array{format: string, content: string}|null $frontmatter
      */

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Extension;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Extension\Claim;
-use MarkupCarve\Carve2\Extension\ExtensionDefinition;
-use MarkupCarve\Carve2\Extension\ExtensionProvider;
-use MarkupCarve\Carve2\Extension\RenderHost;
-use MarkupCarve\Carve2\Extension\Tabs;
-use MarkupCarve\Carve2\Node;
+use MarkupCarve\Carve\Extension\Claim;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\RenderHost;
+use MarkupCarve\Carve\Extension\Tabs;
+use MarkupCarve\Carve\Node;
 
 final class ExtensionFactory
 {
@@ -22,7 +22,7 @@ final class ExtensionFactory
     /**
      * @param array<mixed> $entries
      *
-     * @return array<\MarkupCarve\Carve2\Extension\ExtensionDefinition|\MarkupCarve\Carve2\Extension\ExtensionProvider>
+     * @return array<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
      */
     public function createAll(array $entries): array
     {
@@ -39,7 +39,7 @@ final class ExtensionFactory
     /**
      * @throws \InvalidArgumentException
      *
-     * @return array<\MarkupCarve\Carve2\Extension\ExtensionDefinition|\MarkupCarve\Carve2\Extension\ExtensionProvider>
+     * @return array<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
      */
     public function create(mixed $config): array
     {
@@ -62,7 +62,7 @@ final class ExtensionFactory
                 throw new InvalidArgumentException(sprintf('Unknown option "%s" for core Carve 0.2 extension "%s".', (string)array_key_first($config), $type));
             }
 
-            // C2-T-003: these are core Carve2 constructs and need no registration.
+            // C2-T-003: these are core Carve constructs and need no registration.
 
             return [];
         }
