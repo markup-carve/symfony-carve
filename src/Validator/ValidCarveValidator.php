@@ -46,7 +46,7 @@ final class ValidCarveValidator extends ConstraintValidator
             return;
         }
         foreach ($result->diagnostics as $diagnostic) {
-            if ($diagnostic->channel === 'render-loss') {
+            if ($diagnostic->code === 'profile-construct-degraded') {
                 $this->fail($constraint, sprintf('markup is not allowed by the %s preset', $constraint->preset), ValidCarve::DISALLOWED_ERROR);
 
                 return;
