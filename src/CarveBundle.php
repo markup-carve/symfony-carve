@@ -8,7 +8,6 @@ use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use MarkupCarve\SymfonyCarve\Command\FormatCommand;
 use MarkupCarve\SymfonyCarve\Command\LintCommand;
 use MarkupCarve\SymfonyCarve\Command\RenderCommand;
-use MarkupCarve\SymfonyCarve\Command\TraceCommand;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
 use MarkupCarve\SymfonyCarve\Validator\ValidCarveValidator;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -64,7 +63,7 @@ final class CarveBundle extends AbstractBundle
                     ->defaultValue([])
                 ->end()
                 ->arrayNode('extensions')
-                    ->info('Carve2 extension definitions or a supported type such as tabs.')
+                    ->info('Carve extension definitions or a supported type such as tabs.')
                     ->variablePrototype()->end()
                     ->defaultValue([])
                 ->end()
@@ -136,7 +135,7 @@ final class CarveBundle extends AbstractBundle
 
         $services->set(CarveTools::class)->public();
 
-        foreach ([RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class, TraceCommand::class] as $command) {
+        foreach ([RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class] as $command) {
             $services->set($command)->autowire()->tag('console.command');
         }
 

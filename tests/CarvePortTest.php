@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Tests;
 
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Extension\RenderHost;
-use MarkupCarve\Carve2\Node;
-use MarkupCarve\Carve2\Output\OutputWriter;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Extension\RenderHost;
+use MarkupCarve\Carve\Node;
+use MarkupCarve\Carve\Output\OutputWriter;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
 
-final class Carve2PortTest extends TestCase
+final class CarvePortTest extends TestCase
 {
-    public function testParseReturnsTheCarve2TreeAndRenderUsesItsHtmlPolicy(): void
+    public function testParseReturnsTheCarveTreeAndRenderUsesItsHtmlPolicy(): void
     {
         // C2-T-005, C2-H-127, and C2-H-128.
         $renderer = new CarveRenderer();
@@ -33,7 +33,7 @@ final class Carve2PortTest extends TestCase
 
     public function testRegisteredWriterServesTheExistingTextEntryPoint(): void
     {
-        // C2-T-005: target writers are supplied through the Carve2 registry.
+        // C2-T-005: target writers are supplied through the Carve registry.
         $writer = new class implements OutputWriter {
             public function target(): string
             {
@@ -45,7 +45,7 @@ final class Carve2PortTest extends TestCase
                 return (string)count($tree->children ?? []);
             }
         };
-        $registry = Carve2::writers()->register($writer);
+        $registry = Carve::writers()->register($writer);
 
         self::assertSame('2', (new CarveRenderer(writers: $registry))->renderText("one\n\ntwo\n"));
     }
@@ -58,7 +58,7 @@ final class Carve2PortTest extends TestCase
         (new CarveRenderer())->renderText('one');
     }
 
-    public function testFormatLintAndHtmlImportUseCarve2(): void
+    public function testFormatLintAndHtmlImportUseCarve(): void
     {
         // C2-W-001, C2-W-103, and C2-M-001.
         $tools = new CarveTools();

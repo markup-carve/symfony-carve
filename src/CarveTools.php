@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\Include\FileResolver;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Include\FileResolver;
 use RuntimeException;
 use Throwable;
 
@@ -19,7 +19,7 @@ final class CarveTools
 
     public function format(string $source, bool $alignTables = false): string
     {
-        return Carve2::format($source, ['alignTables' => $alignTables]);
+        return Carve::format($source, ['alignTables' => $alignTables]);
     }
 
     public function isFormatted(string $source, bool $alignTables = false): bool
@@ -33,7 +33,7 @@ final class CarveTools
     public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
         if ($includeRoot === null) {
-            return $this->findings(Carve2::lint($source), $source);
+            return $this->findings(Carve::lint($source), $source);
         }
         try {
             $resolver = FileResolver::forRoot($includeRoot);
@@ -41,11 +41,11 @@ final class CarveTools
             throw new InvalidArgumentException('Carve include root: ' . $exception->getMessage(), 0, $exception);
         }
 
-        return $this->findings(Carve2::lint($source, ['includes' => ['resolver' => $resolver, 'file' => $sourcePath]]), $source, $includeRoot);
+        return $this->findings(Carve::lint($source, ['includes' => ['resolver' => $resolver, 'file' => $sourcePath]]), $source, $includeRoot);
     }
 
     /**
-     * @param array<\MarkupCarve\Carve2\Diagnostics\Diagnostic> $diagnostics
+     * @param array<\MarkupCarve\Carve\Diagnostics\Diagnostic> $diagnostics
      * @param string|null $root
      * @param string $source
      *
@@ -71,11 +71,6 @@ final class CarveTools
         return $result;
     }
 
-    public function trace(string $source): string
-    {
-        throw new RuntimeException('Carve 0.2 decision trace is not available yet.');
-    }
-
     public function fromMarkdown(string $source): string
     {
         throw new RuntimeException('Carve 0.2 Markdown importer is not available yet.');
@@ -83,7 +78,7 @@ final class CarveTools
 
     public function fromHtml(string $source): string
     {
-        return Carve2::importHtml($source)->source;
+        return Carve::importHtml($source)->source;
     }
 
     public function fromDjot(string $source): string

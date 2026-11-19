@@ -23,7 +23,7 @@ final class FormatCommandTest extends CommandTestCase
         $tester = new CommandTester(new FormatCommand(new CarveTools()));
 
         self::assertSame(Command::SUCCESS, $tester->execute(['paths' => [$this->file('a.crv', "#   Title\n")]]));
-        // C2-W-001 and U-043: Carve2 writes the canonical = heading marker.
+        // C2-W-001 and U-043: Carve writes the canonical = heading marker.
         self::assertSame("= Title\n", $tester->getDisplay());
     }
 

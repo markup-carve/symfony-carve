@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Validator;
 
-use MarkupCarve\Carve2\Carve2;
-use MarkupCarve\Carve2\CarveException;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\CarveException;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use Stringable;
 use Symfony\Component\Validator\Constraint;
@@ -39,7 +39,7 @@ final class ValidCarveValidator extends ConstraintValidator
         }
 
         try {
-            $result = Carve2::renderWithDiagnostics($value, ['profile' => $constraint->preset ?? 'full']);
+            $result = Carve::renderWithDiagnostics($value, ['profile' => $constraint->preset ?? 'full']);
         } catch (CarveException $exception) {
             $this->fail($constraint, $exception->getMessage(), ValidCarve::INVALID_ERROR);
 

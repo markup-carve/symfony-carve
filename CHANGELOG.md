@@ -4,6 +4,10 @@
 
 ### Breaking
 
+- Rename the Carve 0.2 engine imports to `MarkupCarve\Carve\Carve` and pin the renamed engine at `db1624daf9`. Remove temporary `Carve2` names and 0.1 code paths.
+
+### Breaking
+
 - Port the bundle to Carve 0.2 through the Carve2 public API, pinned to its unreleased `next2` commit.
 - Replace the 0.1 safety and render settings with `raw_html`, `url_policy`, `sections`, and `heading_ids`. Raw HTML remains disabled by default.
 - Use the 0.2 formatter, lint diagnostics, HTML importer, tree, and include resolver. The 0.2 formatter writes `=` headings and 0.2 table syntax.
@@ -12,7 +16,8 @@
 
 - Keep text, Markdown, and ANSI output entry points through the Carve2 writer registry. Until their writers arrive, calls fail with a clear availability error.
 - Port tab and diagram registration to Carve2 extension definitions. Extract heading and frontmatter data from the Carve2 tree.
-- Keep pending Markdown and Djot import and decision trace commands registered with clear availability errors.
+- Keep pending Markdown and Djot import commands registered with clear availability errors.
+- Remove the decision trace service and `carve:trace` command; the 0.2 engine does not provide this API.
 
 
 ## 0.1.7 - 2026-11-12

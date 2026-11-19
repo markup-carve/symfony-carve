@@ -11,7 +11,6 @@ use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use MarkupCarve\SymfonyCarve\Command\FormatCommand;
 use MarkupCarve\SymfonyCarve\Command\LintCommand;
 use MarkupCarve\SymfonyCarve\Command\RenderCommand;
-use MarkupCarve\SymfonyCarve\Command\TraceCommand;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
 use MarkupCarve\SymfonyCarve\Validator\ValidCarveValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -42,7 +41,7 @@ final class CarveBundleTest extends TestCase
     {
         $config = $this->process([]);
 
-        // C2-H-137: Carve2 uses rawHtml, urlPolicy, sections, and headingIds.
+        // C2-H-137: Carve uses rawHtml, urlPolicy, sections, and headingIds.
         self::assertFalse($config['raw_html']);
         self::assertSame([], $config['url_policy']);
         self::assertSame('interactive', $config['mode']);
@@ -126,7 +125,7 @@ final class CarveBundleTest extends TestCase
         $container = $this->container([], compile: false);
 
         self::assertEqualsCanonicalizing(
-            [RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class, TraceCommand::class],
+            [RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class],
             array_keys($container->findTaggedServiceIds('console.command')),
         );
         self::assertArrayHasKey(ValidCarveValidator::class, $container->findTaggedServiceIds('validator.constraint_validator'));
@@ -140,7 +139,7 @@ final class CarveBundleTest extends TestCase
         $loader = $container->get('console.command_loader');
         self::assertInstanceOf(CommandLoaderInterface::class, $loader);
 
-        foreach (['carve:render', 'carve:lint', 'carve:fmt', 'carve:convert', 'carve:trace'] as $name) {
+        foreach (['carve:render', 'carve:lint', 'carve:fmt', 'carve:convert'] as $name) {
             self::assertSame($name, $loader->get($name)->getName());
         }
     }

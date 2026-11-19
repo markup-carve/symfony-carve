@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Tests\Command;
 
-use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -32,7 +32,7 @@ final class ConvertCommandTest extends CommandTestCase
         $tester = new CommandTester(new ConvertCommand(new CarveTools()));
 
         // C2-T-003: keep the conversion assertions until both 0.2 importers arrive.
-        $api = new ReflectionClass(Carve2::class);
+        $api = new ReflectionClass(Carve::class);
         if ($name === 'a.md' && !$api->hasMethod('importMarkdown')) {
             $this->markTestSkipped('Pending carve-php#5237.');
         }
@@ -46,7 +46,7 @@ final class ConvertCommandTest extends CommandTestCase
     public function testFromOverridesAndOutputWritesAFile(): void
     {
         // C2-T-003: Markdown import is pending, see carve-php#5237.
-        if (!(new ReflectionClass(Carve2::class))->hasMethod('importMarkdown')) {
+        if (!(new ReflectionClass(Carve::class))->hasMethod('importMarkdown')) {
             $this->markTestSkipped('Pending carve-php#5237.');
         }
         $tester = new CommandTester(new ConvertCommand(new CarveTools()));

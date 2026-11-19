@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Carve2;
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -76,7 +76,7 @@ final class CarveToolsTest extends TestCase
     public function testImportsMarkdownHtmlAndDjot(): void
     {
         // C2-T-003: these two importers are pending, see carve-php#5237 and #5242.
-        $api = new ReflectionClass(Carve2::class);
+        $api = new ReflectionClass(Carve::class);
         if (!$api->hasMethod('importMarkdown') || !$api->hasMethod('importDjot')) {
             $this->markTestSkipped('Pending carve-php#5237 and carve-php#5242.');
         }
@@ -87,9 +87,9 @@ final class CarveToolsTest extends TestCase
         self::assertSame('*bold*', trim($tools->import('*bold*', 'djot')));
     }
 
-    public function testImportsHtmlWithCarve2(): void
+    public function testImportsHtmlWithCarve(): void
     {
-        // C2-M-001: HTML import is available in Carve2.
+        // C2-M-001: HTML import is available in Carve.
         self::assertSame('*bold*', trim((new CarveTools())->fromHtml('<p><strong>bold</strong></p>')));
     }
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests\Extension;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve2\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use MarkupCarve\SymfonyCarve\Extension\WikiLinkUrlTemplate;
@@ -25,7 +25,7 @@ final class ExtensionFactoryTest extends TestCase
     #[DataProvider('types')]
     public function testEveryListedTypeBuilds(string $type): void
     {
-        // C2-X-001: the bundle now builds Carve2 extension definitions.
+        // C2-X-001: the bundle now builds Carve extension definitions.
         $definitions = (new ExtensionFactory())->create($type);
         self::assertNotSame([], $definitions);
         self::assertInstanceOf(ExtensionDefinition::class, $definitions[0]);
