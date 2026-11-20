@@ -208,10 +208,11 @@ final class CarveRenderer
     {
         return $this->cached('result', hash('xxh3', $carve), function () use ($carve): RenderedCarve {
             $tree = $this->parse($carve);
+            $markerName = 'data-carve-host-toc-' . bin2hex(random_bytes(8));
             $renderedTree = null;
-            $capture = static function (Node $view) use (&$renderedTree): Node {
+            $capture = static function (Node $view) use (&$renderedTree, $markerName): Node {
                 $index = 0;
-                self::markHeadings($view, $index);
+                self::markHeadings($view, $index, $markerName);
                 $renderedTree = $view;
 
                 return $view;
@@ -220,7 +221,7 @@ final class CarveRenderer
             $toc = [];
             $frontmatter = null;
             $this->collectMetadata($renderedTree ?? $tree, $toc, $frontmatter);
-            $shapes = self::markedHeadingShapes($html);
+            $shapes = self::markedHeadingShapes($html, $markerName);
             foreach ($toc as $index => &$heading) {
                 if (isset($shapes[$index])) {
                     $heading['level'] = $shapes[$index]['level'];
@@ -228,7 +229,7 @@ final class CarveRenderer
                 }
             }
             unset($heading);
-            $html = preg_replace('/\sdata-carve-host-toc="\d+"/', '', $html) ?? $html;
+            $html = self::stripHeadingMarkers($html, $markerName);
 
             return new RenderedCarve($carve, $html, $toc, $frontmatter);
         });
@@ -474,23 +475,23 @@ final class CarveRenderer
         return $text;
     }
 
-    private static function markHeadings(Node $node, int &$index): void
+    private static function markHeadings(Node $node, int &$index, string $markerName): void
     {
         if ($node->type === 'heading') {
             $attrs = $node->f['attrs'] ?? null;
             $attrs = $attrs instanceof Attrs ? clone $attrs : new Attrs();
-            $attrs->setKey('data-carve-host-toc', (string)$index++);
+            $attrs->setKey($markerName, (string)$index++);
             $node->f['attrs'] = $attrs;
         }
         foreach ($node->children ?? [] as $child) {
-            self::markHeadings($child, $index);
+            self::markHeadings($child, $index, $markerName);
         }
     }
 
     /**
      * @return array<int, array{level: int, id: string|null}>
      */
-    private static function markedHeadingShapes(string $html): array
+    private static function markedHeadingShapes(string $html, string $markerName): array
     {
         preg_match_all('/<\/?section\b[^>]*>|<h[1-6]\b[^>]*>/i', $html, $matches);
         $sections = [];
@@ -500,7 +501,7 @@ final class CarveRenderer
                 array_pop($sections);
             } elseif (str_starts_with($tag, '<section')) {
                 $sections[] = self::tagId($tag);
-            } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1 && preg_match('/\sdata-carve-host-toc="(\d+)"/', $tag, $marker) === 1) {
+            } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1 && preg_match('/\s' . preg_quote($markerName, '/') . '="(\d+)"/', $tag, $marker) === 1) {
                 $id = self::tagId($tag);
                 if ($id === null) {
                     for ($i = count($sections) - 1; $i >= 0; --$i) {
@@ -516,6 +517,11 @@ final class CarveRenderer
         }
 
         return $shapes;
+    }
+
+    private static function stripHeadingMarkers(string $html, string $markerName): string
+    {
+        return preg_replace_callback('/<h[1-6]\b[^>]*>/i', static fn (array $match): string => preg_replace('/\s' . preg_quote($markerName, '/') . '="\d+"/', '', $match[0]) ?? $match[0], $html) ?? $html;
     }
 
     private static function tagId(string $tag): ?string

@@ -90,6 +90,8 @@ final class EngineConfigTest extends TestCase
         self::assertSame(1, $calls);
         self::assertSame('1 Hello', $result->toc()[0]['text']);
         self::assertStringNotContainsString('data-carve-host-toc', $result->html);
+        $literal = (new CarveRenderer(rawHtml: true))->renderResult("```{=html}\n<div data-carve-host-toc=\"12\">x</div>\n```\n");
+        self::assertStringContainsString('data-carve-host-toc="12"', $literal->html);
     }
 
     public function testSoftBreakAndNullableProfile(): void
