@@ -8,30 +8,26 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Extension\Claim;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
-use MarkupCarve\Carve\Extension\Navigation;
 use MarkupCarve\Carve\Extension\RenderHost;
-use MarkupCarve\Carve\Extension\Tabs;
 use MarkupCarve\Carve\Node;
 
 final class ExtensionFactory
 {
     /**
-     * @var array<string>
+     * @var list<string>
      */
-    public const TYPES = ['tabs', 'mermaid', 'plantuml', 'd2', 'graphviz', 'wavedrom', 'vega_lite', 'chart', 'abc'];
+    public const TYPES = ['mermaid', 'plantuml', 'd2', 'graphviz', 'wavedrom', 'vega_lite', 'chart', 'abc'];
 
     /**
      * @param array<mixed> $entries
      *
-     * @return array<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
+     * @return list<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
      */
     public function createAll(array $entries): array
     {
         $definitions = [];
         foreach ($entries as $entry) {
-            foreach ($this->create($entry) as $definition) {
-                $definitions[] = $definition;
-            }
+            array_push($definitions, ...$this->create($entry));
         }
 
         return $definitions;
@@ -40,98 +36,23 @@ final class ExtensionFactory
     /**
      * @throws \InvalidArgumentException
      *
-     * @return array<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
+     * @return list<\MarkupCarve\Carve\Extension\ExtensionDefinition|\MarkupCarve\Carve\Extension\ExtensionProvider>
      */
     public function create(mixed $config): array
     {
-        if ($config instanceof ExtensionDefinition || $config instanceof ExtensionProvider) {
-            return [$config];
+        if (!is_string($config) && !is_array($config) && !$config instanceof ExtensionDefinition && !$config instanceof ExtensionProvider) {
+            throw new InvalidArgumentException('A Carve extension entry needs a type.');
         }
-        if (is_string($config)) {
-            $config = ['type' => $config];
-        }
-        if (!is_array($config) || !is_string($config['type'] ?? null)) {
-            throw new InvalidArgumentException('A Carve extension entry needs a "type".');
-        }
-        $type = $config['type'];
-        unset($config['type']);
-        if ($type === 'tabs' && $config === []) {
-            return Tabs::extensions(true);
-        }
-        if ($type === 'heading_permalinks') {
-            $options = [];
-            foreach (['symbol', 'cssClass', 'ariaLabel', 'levels', 'prepend', 'showOnHover', 'copyToClipboard'] as $key) {
-                if (array_key_exists($key, $config)) {
-                    $options[$key] = $config[$key];
-                    unset($config[$key]);
-                }
-            }
-            if ($config !== []) {
-                throw new InvalidArgumentException(sprintf('Unknown heading permalink option "%s".', (string)array_key_first($config)));
-            }
-
-            return [Navigation::headingPermalinks(...$options)];
-        }
-        if ($type === 'autolink') {
-            if ($config !== []) {
-                throw new InvalidArgumentException(sprintf('Unknown option "%s" for core Carve 0.2 extension "%s".', (string)array_key_first($config), $type));
-            }
-
-            return [Navigation::autolink()];
-        }
-        if (in_array($type, ['frontmatter', 'table_of_contents', 'smart_quotes'], true)) {
-            if ($config !== []) {
-                throw new InvalidArgumentException(sprintf('Unknown option "%s" for core Carve 0.2 extension "%s".', (string)array_key_first($config), $type));
-            }
-
-            // C2-T-003: these are core Carve constructs and need no registration.
-
+        if ($config === 'frontmatter' || $config === ['type' => 'frontmatter']) {
             return [];
         }
-        if (in_array($type, self::TYPES, true) && $type !== 'tabs' && $config === []) {
-            return [$this->diagram($type)];
-        }
-        if ($type === 'wikilinks' && is_string($config['url_template'] ?? null) && count($config) === 1) {
-            return [$this->wiki($config['url_template'])];
-        }
-
-        throw new InvalidArgumentException(sprintf('Carve 0.2 extension "%s" is not available yet.', $type));
-    }
-
-    private function wiki(string $urlTemplate): ExtensionDefinition
-    {
-        $url = new WikiLinkUrlTemplate($urlTemplate);
-
-        return new ExtensionDefinition(
-            'symfony.wiki',
-            '1',
-            matcher: ['form' => 'inline', 'name' => 'wiki'],
-            transform: static function (Claim $claim): Node {
-                $node = new Node('inline_extension', []);
-                $node->f = [
-                    'name' => 'symfony.wiki',
-                    'version' => '1',
-                    'slots' => [],
-                    'props' => ['page' => self::plainText($claim->node)],
-                    'fallback' => [$claim->copyNode()],
-                ];
-
-                return $node;
-            },
-            renderer: static fn (Node $node, RenderHost $host): string => '<a href="'
-                . RenderHost::escapeAttribute($url((string)($node->f['props']['page'] ?? '')))
-                . '">' . RenderHost::escapeText((string)($node->f['props']['page'] ?? '')) . '</a>',
-        );
-    }
-
-    private static function plainText(Node $node): string
-    {
-        $text = (string)($node->f['value'] ?? '');
-        foreach ($node->children ?? [] as $child) {
-            $text .= self::plainText($child);
+        if (is_string($config) && in_array($config, self::TYPES, true)) {
+            return $config === 'plantuml'
+                ? [$this->diagram('plantuml'), $this->diagram('puml')]
+                : ($config === 'graphviz' ? [$this->diagram('graphviz'), $this->diagram('dot')] : [$this->diagram($config)]);
         }
 
-        return $text;
+        return (new EngineExtensionFactory())->create($config);
     }
 
     private function diagram(string $language): ExtensionDefinition

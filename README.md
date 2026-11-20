@@ -1,6 +1,6 @@
 # symfony-carve
 
-Symfony bundle for Carve 0.2 through the unreleased carve-php Carve API. It provides Twig filters, services, validation, and console commands for rendering, formatting, linting, and HTML import.
+Symfony bundle for Carve 0.2 through the unreleased carve-php Carve API. It provides Twig filters, services, validation, and console commands for rendering, formatting, linting, and HTML, Markdown, GFM, and Djot import.
 
 This branch is a preview. Its Composer dependency is pinned to a specific `next2` engine commit and is not a registry release.
 

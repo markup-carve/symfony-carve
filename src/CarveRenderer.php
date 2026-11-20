@@ -6,13 +6,20 @@ namespace MarkupCarve\SymfonyCarve;
 
 use Closure;
 use InvalidArgumentException;
+use MarkupCarve\Carve\Attrs;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\CarveException;
 use MarkupCarve\Carve\Diagnostics\Diagnostic;
+use MarkupCarve\Carve\Extension\Bundle;
+use MarkupCarve\Carve\Extension\DocumentTransform;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\ExtensionProvider;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Include\IncludeResolver;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\Carve\Output\WriterRegistry;
+use MarkupCarve\Carve\RenderError;
+use MarkupCarve\Carve\RenderResult;
 use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -40,6 +47,7 @@ final class CarveRenderer
         'heading_ids' => 'headingIds',
         'source_lines' => 'sourceLines',
         'smart_typography' => 'smartTypography',
+        'soft_break_mode' => 'softBreak',
     ];
 
     private readonly ?IncludeResolver $includeResolver;
@@ -63,7 +71,7 @@ final class CarveRenderer
     /**
      * @param bool $rawHtml
      * @param array<string, mixed> $urlPolicy
-     * @param string $profile
+     * @param string|null $profile
      * @param string|null $includeRoot
      * @param \Psr\Log\LoggerInterface|null $logger
      * @param string $mode
@@ -80,11 +88,12 @@ final class CarveRenderer
      * @param int|null $cacheTtl
      * @param string $cachePrefix
      * @param string|null $cacheVersion
+     * @param string $softBreak
      */
     public function __construct(
         private readonly bool $rawHtml = false,
         private readonly array $urlPolicy = [],
-        private readonly string $profile = 'full',
+        private readonly ?string $profile = 'full',
         private readonly ?string $includeRoot = null,
         private readonly ?LoggerInterface $logger = null,
         private readonly string $mode = 'interactive',
@@ -101,6 +110,7 @@ final class CarveRenderer
         private readonly ?int $cacheTtl = null,
         private readonly string $cachePrefix = 'carve',
         private readonly ?string $cacheVersion = null,
+        private readonly string $softBreak = 'newline',
     ) {
         $this->arguments = get_defined_vars();
         if (preg_match('/[{}()\/\\\\@:]/', $cachePrefix) === 1) {
@@ -117,17 +127,23 @@ final class CarveRenderer
             }
             $this->includeRootReal = rtrim((string)realpath($includeRoot), DIRECTORY_SEPARATOR);
         }
-        $diagramNames = array_values(array_filter($diagrams, static fn (mixed $name): bool => in_array($name, ExtensionFactory::TYPES, true) && $name !== 'tabs'));
+        foreach ($diagrams as $name) {
+            if (!in_array($name, ExtensionFactory::TYPES, true)) {
+                throw new InvalidArgumentException('Unknown Carve diagram: ' . $name);
+            }
+        }
+        $diagramNames = $diagrams;
         $definitions = (new ExtensionFactory())->createAll(array_merge($extensions, $diagramNames));
         $engineOptions = [
             'rawHtml' => $rawHtml,
-            'profile' => $profile,
+            'profile' => $profile ?? 'full',
             'mode' => $mode,
             'sections' => $sections,
             'headingIds' => $headingIds,
             'symbols' => $symbols,
             'sourceLines' => $sourceLines,
             'smartTypography' => $smartTypography,
+            'softBreak' => $softBreak,
             'labels' => $labels,
             'extensions' => $definitions,
         ];
@@ -136,7 +152,7 @@ final class CarveRenderer
         }
         // Validate every value now, including those not used by a particular call.
         try {
-            Carve::render('', $engineOptions);
+            $this->renderEngine('', $engineOptions);
         } catch (CarveException $exception) {
             throw new InvalidArgumentException($exception->getMessage(), 0, $exception);
         }
@@ -151,7 +167,7 @@ final class CarveRenderer
         $this->activeCache = $cacheable ? $cache : null;
         $this->cacheSignature = hash('xxh3', serialize([
             'carve-php-next2-14a3fab', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
-            $headingIds, $symbols, $sourceLines, $smartTypography, $labels, $diagrams, $extensionState, $cacheVersion,
+            $headingIds, $symbols, $sourceLines, $smartTypography, $softBreak, $labels, $diagrams, $extensionState, $cacheVersion,
         ]));
     }
 
@@ -185,18 +201,37 @@ final class CarveRenderer
 
     public function render(string $carve): string
     {
-        return $this->cached('render', hash('xxh3', $carve), fn (): string => Carve::render($carve, $this->engineOptions));
+        return $this->cached('render', hash('xxh3', $carve), fn (): string => $this->renderEngine($carve, $this->engineOptions));
     }
 
     public function renderResult(string $carve): RenderedCarve
     {
         return $this->cached('result', hash('xxh3', $carve), function () use ($carve): RenderedCarve {
             $tree = $this->parse($carve);
+            $markerName = 'data-carve-host-toc-' . bin2hex(random_bytes(8));
+            $renderedTree = null;
+            $capture = static function (Node $view) use (&$renderedTree, $markerName): Node {
+                $index = 0;
+                self::markHeadings($view, $index, $markerName);
+                $renderedTree = $view;
+
+                return $view;
+            };
+            $html = $this->renderEngineResult($tree, $this->engineOptions, $capture)->html;
             $toc = [];
             $frontmatter = null;
-            $this->collectMetadata($tree, $toc, $frontmatter);
+            $this->collectMetadata($renderedTree ?? $tree, $toc, $frontmatter);
+            $shapes = self::markedHeadingShapes($html, $markerName, $this->sections);
+            foreach ($toc as $index => &$heading) {
+                if (isset($shapes[$index])) {
+                    $heading['level'] = $shapes[$index]['level'];
+                    $heading['id'] = $shapes[$index]['id'] ?? '';
+                }
+            }
+            unset($heading);
+            $html = self::stripHeadingMarkers($html, $markerName);
 
-            return new RenderedCarve($carve, Carve::render($tree, $this->engineOptions), $toc, $frontmatter);
+            return new RenderedCarve($carve, $html, $toc, $frontmatter);
         });
     }
 
@@ -250,7 +285,7 @@ final class CarveRenderer
         $key = hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
         $compute = function () use ($sourcePath, $source): array {
             $options = $this->engineOptions + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]];
-            $result = Carve::renderWithDiagnostics($source, $options);
+            $result = $this->renderEngineResult($source, $options);
             $deps = Carve::includeDependencies($source, $this->parseOptions() + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]]);
             $warnings = [];
             foreach ($result->diagnostics as $diagnostic) {
@@ -337,6 +372,69 @@ final class CarveRenderer
     }
 
     /**
+     * @param \MarkupCarve\Carve\Node|string $source
+     * @param array<string, mixed> $options
+     */
+    private function renderEngine(Node|string $source, array $options): string
+    {
+        return $this->renderEngineResult($source, $options)->html;
+    }
+
+    /**
+     * @param \MarkupCarve\Carve\Node|string $source
+     * @param array<string, mixed> $options
+     * @param \Closure|null $capture
+     *
+     * @throws \MarkupCarve\Carve\RenderError
+     */
+    private function renderEngineResult(Node|string $source, array $options, ?Closure $capture = null): RenderResult
+    {
+        [$options['extensions'], $transforms] = self::orderedExtensions($options['extensions']);
+        if ($capture !== null) {
+            array_push($transforms, new DocumentTransform('symfony.metadata', $capture));
+        }
+
+        $result = Carve::renderWithDocumentTransforms($source, $transforms, $options);
+        if (($options['strictLosses'] ?? false) === true) {
+            $losses = array_values(array_filter($result->diagnostics, static fn (Diagnostic $d): bool => $d->channel === 'render-loss'));
+            if ($losses !== []) {
+                throw new RenderError($losses);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<mixed> $extensions
+     *
+     * @return array{array<\MarkupCarve\Carve\Extension\ExtensionDefinition>, array<\MarkupCarve\Carve\Extension\DocumentTransform>}
+     */
+    private static function orderedExtensions(array $extensions): array
+    {
+        $definitions = [];
+        $transforms = [];
+        foreach ($extensions as $extension) {
+            $entries = $extension instanceof ExtensionProvider ? $extension->definitions() : [$extension];
+            foreach ($entries as $entry) {
+                if (!$entry instanceof ExtensionDefinition) {
+                    continue;
+                }
+                if ($entry->documentTransform !== null) {
+                    $transforms[] = new DocumentTransform($entry->name, $entry->documentTransform);
+                    $entry = new ExtensionDefinition($entry->name, $entry->version, $entry->slots, $entry->matcher, $entry->parent, $entry->transform, $entry->renderer, $entry->buildTimeRenderer, $entry->semanticKeys, $entry->quotes);
+                }
+                $definitions[] = $entry;
+            }
+            if ($extension instanceof Bundle) {
+                array_push($transforms, ...$extension->transforms());
+            }
+        }
+
+        return [$definitions, $transforms];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function parseOptions(): array
@@ -365,12 +463,65 @@ final class CarveRenderer
 
     private function plainText(Node $node): string
     {
+        $data = $node->f['data'] ?? null;
+        if (is_array($data) && ($data['carve.headingPermalinks'] ?? null) === 'chrome') {
+            return '';
+        }
         $text = (string)($node->f['value'] ?? '');
         foreach ($node->children ?? [] as $child) {
             $text .= $this->plainText($child);
         }
 
         return $text;
+    }
+
+    private static function markHeadings(Node $node, int &$index, string $markerName): void
+    {
+        if ($node->type === 'heading') {
+            $attrs = $node->f['attrs'] ?? null;
+            $attrs = $attrs instanceof Attrs ? clone $attrs : new Attrs();
+            $attrs->setKey($markerName, (string)$index++);
+            $node->f['attrs'] = $attrs;
+        }
+        foreach ($node->children ?? [] as $child) {
+            self::markHeadings($child, $index, $markerName);
+        }
+    }
+
+    /**
+     * @return array<int, array{level: int, id: string|null}>
+     */
+    private static function markedHeadingShapes(string $html, string $markerName, bool $sectionsEnabled): array
+    {
+        preg_match_all('/<\/?section\b[^>]*>|<h[1-6]\b[^>]*>/i', $html, $matches);
+        $sections = [];
+        $shapes = [];
+        foreach ($matches[0] as $tag) {
+            if (str_starts_with($tag, '</section')) {
+                array_pop($sections);
+            } elseif (str_starts_with($tag, '<section')) {
+                $sections[] = self::tagId($tag);
+            } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1 && preg_match('/\s' . preg_quote($markerName, '/') . '="(\d+)"/', $tag, $marker) === 1) {
+                $id = self::tagId($tag);
+                if ($id === null && $sectionsEnabled && $sections !== []) {
+                    $id = $sections[array_key_last($sections)];
+                }
+                $shapes[(int)$marker[1]] = ['level' => (int)$level[1], 'id' => $id];
+            }
+        }
+
+        return $shapes;
+    }
+
+    private static function stripHeadingMarkers(string $html, string $markerName): string
+    {
+        return preg_replace_callback('/<h[1-6]\b[^>]*>/i', static fn (array $match): string => preg_replace('/\s' . preg_quote($markerName, '/') . '="\d+"/', '', $match[0]) ?? $match[0], $html) ?? $html;
+    }
+
+    private static function tagId(string $tag): ?string
+    {
+        return preg_match('/(?:^|\s)id="([^"]*)"/i', $tag, $match) === 1
+            ? html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8') : null;
     }
 
     /**
