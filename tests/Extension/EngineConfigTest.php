@@ -92,6 +92,10 @@ final class EngineConfigTest extends TestCase
         self::assertStringNotContainsString('data-carve-host-toc', $result->html);
         $literal = (new CarveRenderer(rawHtml: true))->renderResult("```{=html}\n<div data-carve-host-toc=\"12\">x</div>\n```\n");
         self::assertStringContainsString('data-carve-host-toc="12"', $literal->html);
+        foreach ([true, false] as $sections) {
+            $wrapped = new CarveRenderer(rawHtml: true, headingIds: 'off', sections: $sections);
+            self::assertSame('', $wrapped->renderResult("`<section id=\"outer\">`{=html}\n\n# Hi\n")->toc()[0]['id']);
+        }
     }
 
     public function testSoftBreakAndNullableProfile(): void

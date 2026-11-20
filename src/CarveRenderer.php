@@ -221,7 +221,7 @@ final class CarveRenderer
             $toc = [];
             $frontmatter = null;
             $this->collectMetadata($renderedTree ?? $tree, $toc, $frontmatter);
-            $shapes = self::markedHeadingShapes($html, $markerName);
+            $shapes = self::markedHeadingShapes($html, $markerName, $this->sections);
             foreach ($toc as $index => &$heading) {
                 if (isset($shapes[$index])) {
                     $heading['level'] = $shapes[$index]['level'];
@@ -491,7 +491,7 @@ final class CarveRenderer
     /**
      * @return array<int, array{level: int, id: string|null}>
      */
-    private static function markedHeadingShapes(string $html, string $markerName): array
+    private static function markedHeadingShapes(string $html, string $markerName, bool $sectionsEnabled): array
     {
         preg_match_all('/<\/?section\b[^>]*>|<h[1-6]\b[^>]*>/i', $html, $matches);
         $sections = [];
@@ -503,14 +503,8 @@ final class CarveRenderer
                 $sections[] = self::tagId($tag);
             } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1 && preg_match('/\s' . preg_quote($markerName, '/') . '="(\d+)"/', $tag, $marker) === 1) {
                 $id = self::tagId($tag);
-                if ($id === null) {
-                    for ($i = count($sections) - 1; $i >= 0; --$i) {
-                        if ($sections[$i] !== null) {
-                            $id = $sections[$i];
-
-                            break;
-                        }
-                    }
+                if ($id === null && $sectionsEnabled && $sections !== []) {
+                    $id = $sections[array_key_last($sections)];
                 }
                 $shapes[(int)$marker[1]] = ['level' => (int)$level[1], 'id' => $id];
             }
