@@ -84,6 +84,16 @@ final class CarveToolsTest extends TestCase
         self::assertSame('*bold*', trim($tools->import('*bold*', 'djot')));
     }
 
+    public function testMarkdownImportReadsGitHubFlavoredMarkdown(): void
+    {
+        $tools = new CarveTools();
+        $markdown = "| a | b |\n|---|--:|\n| 1 | 2 |\n\n- [x] done\n";
+
+        self::assertSame("|= a |={>} b |\n| 1 | 2 |\n\n- [x] done\n", $tools->fromMarkdown($markdown));
+        self::assertSame($tools->fromMarkdown($markdown), $tools->import($markdown, 'gfm'));
+        self::assertSame($tools->fromMarkdown($markdown), $tools->import($markdown, 'markdown'));
+    }
+
     public function testImportsHtmlWithCarve(): void
     {
         // C2-M-001: HTML import is available in Carve.

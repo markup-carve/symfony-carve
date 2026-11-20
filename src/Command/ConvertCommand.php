@@ -26,7 +26,7 @@ final class ConvertCommand extends Command
     {
         $this
             ->addArgument('path', InputArgument::REQUIRED, 'The Markdown, HTML or Djot file to convert')
-            ->addOption('from', null, InputOption::VALUE_REQUIRED, 'markdown, html or djot (guessed from the file extension)')
+            ->addOption('from', null, InputOption::VALUE_REQUIRED, 'markdown (GitHub Flavored), gfm, html or djot (guessed from the file extension)')
             ->addOption('output', 'o', InputOption::VALUE_REQUIRED, 'Write to this file instead of the console');
     }
 
