@@ -304,14 +304,10 @@ final class CarveRendererTest extends TestCase
         $this->assertStringContainsString('<pre class="mermaid" role="img" aria-label="mermaid">', $html);
     }
 
-    public function testUnknownDiagramNameIsIgnored(): void
+    public function testUnknownDiagramNameIsRejected(): void
     {
-        $carve = "``` plantuml\nA -> B\n```";
-
-        $html = (new CarveRenderer(diagrams: ['nope']))->render($carve);
-
-        // Unknown preset skipped, so the plantuml fence stays a plain code block.
-        $this->assertStringNotContainsString('<pre class="plantuml"', $html);
-        $this->assertStringContainsString('<code', $html);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown Carve diagram: nope');
+        new CarveRenderer(diagrams: ['nope']);
     }
 }

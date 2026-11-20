@@ -34,7 +34,7 @@ final class CarveBundle extends AbstractBundle
                     ->defaultValue([])
                 ->end()
                 ->enumNode('profile')
-                    ->values(['full', 'article', 'comment', 'minimal'])
+                    ->values(['full', 'article', 'comment', 'minimal', null])
                     ->defaultValue('full')
                 ->end()
                 ->enumNode('mode')
@@ -48,6 +48,7 @@ final class CarveBundle extends AbstractBundle
                 ->end()
                 ->booleanNode('source_lines')->defaultFalse()->end()
                 ->booleanNode('smart_typography')->defaultTrue()->end()
+                ->enumNode('soft_break_mode')->values(['newline', 'space', 'br'])->defaultValue('newline')->end()
                 ->arrayNode('symbols')
                     ->useAttributeAsKey('name')
                     ->scalarPrototype()->end()
@@ -123,6 +124,7 @@ final class CarveBundle extends AbstractBundle
                 '$symbols' => $config['symbols'],
                 '$sourceLines' => $config['source_lines'],
                 '$smartTypography' => $config['smart_typography'],
+                '$softBreak' => $config['soft_break_mode'],
                 '$labels' => $config['labels'],
                 '$extensions' => $config['extensions'],
                 '$diagrams' => $config['diagrams'],

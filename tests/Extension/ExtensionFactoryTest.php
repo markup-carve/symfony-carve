@@ -47,7 +47,7 @@ final class ExtensionFactoryTest extends TestCase
     public function testAnUnknownOptionIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown option "colour"');
+        $this->expectExceptionMessage('Unknown Carve extension option "colour"');
         (new ExtensionFactory())->create(['type' => 'autolink', 'colour' => 'red']);
     }
 

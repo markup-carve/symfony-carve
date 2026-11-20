@@ -9,10 +9,13 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\CarveException;
 use MarkupCarve\Carve\Diagnostics\Diagnostic;
+use MarkupCarve\Carve\Extension\Bundle;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Include\IncludeResolver;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\Carve\Output\WriterRegistry;
+use MarkupCarve\Carve\RenderError;
+use MarkupCarve\Carve\RenderResult;
 use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -40,6 +43,7 @@ final class CarveRenderer
         'heading_ids' => 'headingIds',
         'source_lines' => 'sourceLines',
         'smart_typography' => 'smartTypography',
+        'soft_break_mode' => 'softBreak',
     ];
 
     private readonly ?IncludeResolver $includeResolver;
@@ -63,7 +67,7 @@ final class CarveRenderer
     /**
      * @param bool $rawHtml
      * @param array<string, mixed> $urlPolicy
-     * @param string $profile
+     * @param string|null $profile
      * @param string|null $includeRoot
      * @param \Psr\Log\LoggerInterface|null $logger
      * @param string $mode
@@ -72,6 +76,7 @@ final class CarveRenderer
      * @param array<string, string> $symbols
      * @param bool $sourceLines
      * @param bool $smartTypography
+     * @param string $softBreak
      * @param array<string, string> $labels
      * @param array<mixed> $extensions
      * @param array<string> $diagrams
@@ -84,7 +89,7 @@ final class CarveRenderer
     public function __construct(
         private readonly bool $rawHtml = false,
         private readonly array $urlPolicy = [],
-        private readonly string $profile = 'full',
+        private readonly ?string $profile = 'full',
         private readonly ?string $includeRoot = null,
         private readonly ?LoggerInterface $logger = null,
         private readonly string $mode = 'interactive',
@@ -93,6 +98,7 @@ final class CarveRenderer
         private readonly array $symbols = [],
         private readonly bool $sourceLines = false,
         private readonly bool $smartTypography = true,
+        private readonly string $softBreak = 'newline',
         private readonly array $labels = [],
         private readonly array $extensions = [],
         private readonly array $diagrams = [],
@@ -117,17 +123,23 @@ final class CarveRenderer
             }
             $this->includeRootReal = rtrim((string)realpath($includeRoot), DIRECTORY_SEPARATOR);
         }
-        $diagramNames = array_values(array_filter($diagrams, static fn (mixed $name): bool => in_array($name, ExtensionFactory::TYPES, true) && $name !== 'tabs'));
+        foreach ($diagrams as $name) {
+            if (!in_array($name, ExtensionFactory::TYPES, true)) {
+                throw new InvalidArgumentException('Unknown Carve diagram: ' . $name);
+            }
+        }
+        $diagramNames = $diagrams;
         $definitions = (new ExtensionFactory())->createAll(array_merge($extensions, $diagramNames));
         $engineOptions = [
             'rawHtml' => $rawHtml,
-            'profile' => $profile,
+            'profile' => $profile ?? 'full',
             'mode' => $mode,
             'sections' => $sections,
             'headingIds' => $headingIds,
             'symbols' => $symbols,
             'sourceLines' => $sourceLines,
             'smartTypography' => $smartTypography,
+            'softBreak' => $softBreak,
             'labels' => $labels,
             'extensions' => $definitions,
         ];
@@ -136,7 +148,7 @@ final class CarveRenderer
         }
         // Validate every value now, including those not used by a particular call.
         try {
-            Carve::render('', $engineOptions);
+            $this->renderEngine('', $engineOptions);
         } catch (CarveException $exception) {
             throw new InvalidArgumentException($exception->getMessage(), 0, $exception);
         }
@@ -151,7 +163,7 @@ final class CarveRenderer
         $this->activeCache = $cacheable ? $cache : null;
         $this->cacheSignature = hash('xxh3', serialize([
             'carve-php-next2-14a3fab', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
-            $headingIds, $symbols, $sourceLines, $smartTypography, $labels, $diagrams, $extensionState, $cacheVersion,
+            $headingIds, $symbols, $sourceLines, $smartTypography, $softBreak, $labels, $diagrams, $extensionState, $cacheVersion,
         ]));
     }
 
@@ -185,7 +197,7 @@ final class CarveRenderer
 
     public function render(string $carve): string
     {
-        return $this->cached('render', hash('xxh3', $carve), fn (): string => Carve::render($carve, $this->engineOptions));
+        return $this->cached('render', hash('xxh3', $carve), fn (): string => $this->renderEngine($carve, $this->engineOptions));
     }
 
     public function renderResult(string $carve): RenderedCarve
@@ -196,7 +208,7 @@ final class CarveRenderer
             $frontmatter = null;
             $this->collectMetadata($tree, $toc, $frontmatter);
 
-            return new RenderedCarve($carve, Carve::render($tree, $this->engineOptions), $toc, $frontmatter);
+            return new RenderedCarve($carve, $this->renderEngine($tree, $this->engineOptions), $toc, $frontmatter);
         });
     }
 
@@ -250,7 +262,7 @@ final class CarveRenderer
         $key = hash('xxh3', serialize([$sourcePath, hash('xxh3', $source)]));
         $compute = function () use ($sourcePath, $source): array {
             $options = $this->engineOptions + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]];
-            $result = Carve::renderWithDiagnostics($source, $options);
+            $result = $this->renderEngineResult($source, $options);
             $deps = Carve::includeDependencies($source, $this->parseOptions() + ['includes' => ['resolver' => $this->includeResolver, 'file' => $sourcePath]]);
             $warnings = [];
             foreach ($result->diagnostics as $diagnostic) {
@@ -334,6 +346,41 @@ final class CarveRenderer
             : array_intersect_key($this->engineOptions, array_flip(['smartTypography', 'urlPolicy', 'strictLosses']));
 
         return Carve::writeTo($writerTarget, Carve::parse($source, $options), $writerOptions, $registry);
+    }
+
+    /**
+     * @param \MarkupCarve\Carve\Node|string $source
+     * @param array<string, mixed> $options
+     */
+    private function renderEngine(Node|string $source, array $options): string
+    {
+        return $this->renderEngineResult($source, $options)->html;
+    }
+
+    /**
+     * @param \MarkupCarve\Carve\Node|string $source
+     * @param array<string, mixed> $options
+     *
+     * @throws \MarkupCarve\Carve\RenderError
+     */
+    private function renderEngineResult(Node|string $source, array $options): RenderResult
+    {
+        $transforms = [];
+        foreach ($options['extensions'] as $extension) {
+            if ($extension instanceof Bundle) {
+                array_push($transforms, ...array_values($extension->transforms()));
+            }
+        }
+
+        $result = Carve::renderWithDocumentTransforms($source, $transforms, $options);
+        if (($options['strictLosses'] ?? false) === true) {
+            $losses = array_values(array_filter($result->diagnostics, static fn (Diagnostic $d): bool => $d->channel === 'render-loss'));
+            if ($losses !== []) {
+                throw new RenderError($losses);
+            }
+        }
+
+        return $result;
     }
 
     /**
