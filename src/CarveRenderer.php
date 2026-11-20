@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve;
 
 use Closure;
+use Composer\InstalledVersions;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Attrs;
 use MarkupCarve\Carve\Carve;
@@ -166,7 +167,8 @@ final class CarveRenderer
         }
         $this->activeCache = $cacheable ? $cache : null;
         $this->cacheSignature = hash('xxh3', serialize([
-            'carve-php-next2-14a3fab', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
+            Carve::class, InstalledVersions::getReference('markup-carve/carve-php'),
+            $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
             $headingIds, $symbols, $sourceLines, $smartTypography, $softBreak, $labels, $diagrams, $extensionState, $cacheVersion,
         ]));
     }
