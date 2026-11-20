@@ -50,6 +50,7 @@ final class CarveExtensionTest extends TestCase
 
     public function testTextFilterRendersAndIsEscaped(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         $twig = new Environment(new ArrayLoader([
             'tpl' => '{{ source|carve_text }}',
         ]));
@@ -62,6 +63,7 @@ final class CarveExtensionTest extends TestCase
 
     public function testMarkdownFilterRendersAndIsEscaped(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         $twig = new Environment(new ArrayLoader([
             'tpl' => '{{ source|carve_markdown }}',
         ]));

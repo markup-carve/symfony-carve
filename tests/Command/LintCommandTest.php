@@ -39,7 +39,8 @@ final class LintCommandTest extends CommandTestCase
         $main = $this->file('main.crv', "# Main\n\n{{ part.crv }}\n");
         $tester = new CommandTester(new LintCommand(new CarveTools()));
 
-        self::assertSame(Command::SUCCESS, $tester->execute(['paths' => [$main]]));
+        // C2-N-085: an unresolved include is itself a lint finding.
+        self::assertSame(Command::FAILURE, $tester->execute(['paths' => [$main]]));
         self::assertSame(Command::FAILURE, $tester->execute(['paths' => [$main], '--include-root' => $this->dir]));
         self::assertStringContainsString('part.crv:1:1', $tester->getDisplay());
     }

@@ -30,6 +30,16 @@ final class ValidCarveValidatorTest extends TestCase
         self::assertCount(0, $this->validator()->validate('_fine_', new ValidCarve(preset: 'comment')));
     }
 
+    public function testDeniedUrlIsNotAProfileViolation(): void
+    {
+        // C2-H-128 and C2-H-129: URL policy loss is separate from profile degradation.
+        $source = '[x](javascript:alert(1))';
+        self::assertCount(0, $this->validator()->validate($source, new ValidCarve()));
+        $violations = $this->validator()->validate($source, new ValidCarve(strict: true));
+        self::assertCount(1, $violations);
+        self::assertSame(ValidCarve::INVALID_ERROR, $violations->get(0)->getCode());
+    }
+
     public function testMaxLengthCountsCharacters(): void
     {
         self::assertCount(0, $this->validator()->validate('äöü', new ValidCarve(maxLength: 3)));
