@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve;
 
 use Closure;
+use DOMDocument;
+use DOMElement;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\CarveException;
@@ -76,7 +78,6 @@ final class CarveRenderer
      * @param array<string, string> $symbols
      * @param bool $sourceLines
      * @param bool $smartTypography
-     * @param string $softBreak
      * @param array<string, string> $labels
      * @param array<mixed> $extensions
      * @param array<string> $diagrams
@@ -85,6 +86,7 @@ final class CarveRenderer
      * @param int|null $cacheTtl
      * @param string $cachePrefix
      * @param string|null $cacheVersion
+     * @param string $softBreak
      */
     public function __construct(
         private readonly bool $rawHtml = false,
@@ -98,7 +100,6 @@ final class CarveRenderer
         private readonly array $symbols = [],
         private readonly bool $sourceLines = false,
         private readonly bool $smartTypography = true,
-        private readonly string $softBreak = 'newline',
         private readonly array $labels = [],
         private readonly array $extensions = [],
         private readonly array $diagrams = [],
@@ -107,6 +108,7 @@ final class CarveRenderer
         private readonly ?int $cacheTtl = null,
         private readonly string $cachePrefix = 'carve',
         private readonly ?string $cacheVersion = null,
+        private readonly string $softBreak = 'newline',
     ) {
         $this->arguments = get_defined_vars();
         if (preg_match('/[{}()\/\\\\@:]/', $cachePrefix) === 1) {
@@ -204,11 +206,11 @@ final class CarveRenderer
     {
         return $this->cached('result', hash('xxh3', $carve), function () use ($carve): RenderedCarve {
             $tree = $this->parse($carve);
-            $toc = [];
             $frontmatter = null;
-            $this->collectMetadata($tree, $toc, $frontmatter);
+            $this->collectFrontmatter($tree, $frontmatter);
+            $html = $this->renderEngine($tree, $this->engineOptions);
 
-            return new RenderedCarve($carve, $this->renderEngine($tree, $this->engineOptions), $toc, $frontmatter);
+            return new RenderedCarve($carve, $html, self::renderedHeadings($html), $frontmatter);
         });
     }
 
@@ -393,31 +395,49 @@ final class CarveRenderer
 
     /**
      * @param \MarkupCarve\Carve\Node $node
-     * @param list<array{level: int, text: string, html: string, id: string}> $toc
      * @param array{format: string, content: string}|null $frontmatter
      */
-    private function collectMetadata(Node $node, array &$toc, ?array &$frontmatter): void
+    private function collectFrontmatter(Node $node, ?array &$frontmatter): void
     {
         if ($node->type === 'frontmatter') {
             $frontmatter = ['format' => (string)$node->f['format'], 'content' => (string)$node->f['value']];
         }
-        if ($node->type === 'heading') {
-            $text = $this->plainText($node);
-            $toc[] = ['level' => (int)$node->f['level'], 'text' => $text, 'html' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 'id' => (string)($node->f['generatedId'] ?? $node->f['id'] ?? '')];
-        }
         foreach ($node->children ?? [] as $child) {
-            $this->collectMetadata($child, $toc, $frontmatter);
+            $this->collectFrontmatter($child, $frontmatter);
         }
     }
 
-    private function plainText(Node $node): string
+    /**
+     * @return list<array{level: int, text: string, html: string, id: string}>
+     */
+    private static function renderedHeadings(string $html): array
     {
-        $text = (string)($node->f['value'] ?? '');
-        foreach ($node->children ?? [] as $child) {
-            $text .= $this->plainText($child);
+        $document = new DOMDocument();
+        $document->loadHTML('<meta charset="utf-8"><body>' . $html . '</body>', LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
+        $toc = [];
+        foreach ($document->getElementsByTagName('*') as $element) {
+            if (preg_match('/^h([1-6])$/', $element->tagName, $match) !== 1) {
+                continue;
+            }
+            $id = $element->getAttribute('id');
+            for ($parent = $element->parentNode; $id === '' && $parent instanceof DOMElement; $parent = $parent->parentNode) {
+                if ($parent->tagName === 'section') {
+                    $id = $parent->getAttribute('id');
+                }
+            }
+            $heading = $element->cloneNode(true);
+            if ($heading instanceof DOMElement) {
+                foreach (iterator_to_array($heading->getElementsByTagName('a')) as $anchor) {
+                    if (str_contains(' ' . $anchor->getAttribute('class') . ' ', ' permalink ')) {
+                        $anchor->parentNode?->removeChild($anchor);
+                    }
+                }
+            }
+            $text = trim($heading->textContent ?? '');
+            $toc[] = ['level' => (int)$match[1], 'text' => $text, 'html' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 'id' => $id];
         }
 
-        return $text;
+        return $toc;
     }
 
     /**

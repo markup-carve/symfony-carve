@@ -122,14 +122,15 @@ class EngineExtensionFactory
             return [self::plantuml('plantuml', $class), self::plantuml('puml', $class)];
         }
         if ($type === 'external_links') {
-            self::acceptKeys($config, ['type', 'rel', 'target']);
+            self::acceptKeys($config, ['type', 'rel', 'target', 'nofollow']);
             $target = $config['target'] ?? '_blank';
             $rel = $config['rel'] ?? 'noopener noreferrer';
-            if (!is_string($target) || !is_string($rel)) {
+            $nofollow = $config['nofollow'] ?? false;
+            if (!is_string($target) || !is_string($rel) || !is_bool($nofollow)) {
                 throw new InvalidArgumentException('External link target and rel must be strings.');
             }
 
-            return [Navigation::externalLinks($target, $rel)];
+            return [Navigation::externalLinks($target, $rel, $nofollow)];
         }
         if ($type === 'heading_levels') {
             self::acceptKeys($config, ['type', 'offset']);

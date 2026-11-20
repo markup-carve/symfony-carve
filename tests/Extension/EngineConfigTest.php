@@ -41,6 +41,12 @@ final class EngineConfigTest extends TestCase
         self::assertNotSame('', (new CarveRenderer(extensions: [$entry]))->render('hello'));
     }
 
+    public function testExternalLinksNofollowOption(): void
+    {
+        $entry = ['type' => 'external_links', 'nofollow' => true];
+        self::assertStringContainsString('nofollow', (new CarveRenderer(extensions: [$entry]))->render('[x](https://example.com)'));
+    }
+
     public function testUnknownOptionIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -67,6 +73,14 @@ final class EngineConfigTest extends TestCase
     public function testCoreFrontmatterAliasRemainsAccepted(): void
     {
         self::assertSame([], (new ExtensionFactory())->create('frontmatter'));
+    }
+
+    public function testPositionalLabelsAndRenderedTocRemainConsistent(): void
+    {
+        $positional = new CarveRenderer(false, [], 'full', null, null, 'interactive', true, 'keep-case', [], false, true, ['example' => 'Example']);
+        self::assertStringContainsString('<p>hello</p>', $positional->render('hello'));
+        $result = (new CarveRenderer(headingIds: 'lower', extensions: ['heading_level_shift', 'heading_permalinks']))->renderResult("# My Title\n");
+        self::assertSame([['level' => 2, 'text' => 'My Title', 'html' => 'My Title', 'id' => 'my-title']], $result->toc());
     }
 
     public function testPlantumlAlias(): void
