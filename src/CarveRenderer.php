@@ -150,7 +150,7 @@ final class CarveRenderer
         }
         $this->activeCache = $cacheable ? $cache : null;
         $this->cacheSignature = hash('xxh3', serialize([
-            'carve-php-next2-db1624d', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
+            'carve-php-next2-14a3fab', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
             $headingIds, $symbols, $sourceLines, $smartTypography, $labels, $diagrams, $extensionState, $cacheVersion,
         ]));
     }
