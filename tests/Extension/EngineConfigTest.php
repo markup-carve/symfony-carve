@@ -105,6 +105,9 @@ final class EngineConfigTest extends TestCase
         $noIds = (new CarveRenderer(rawHtml: true, headingIds: 'off', extensions: ['heading_level_shift']))->renderResult("`<h3 id=\"raw\">Real preview</h3>`{=html}\n\n# Real\n");
         self::assertSame(2, $noIds->toc()[0]['level']);
         self::assertSame('', $noIds->toc()[0]['id']);
+        $noSections = (new CarveRenderer(rawHtml: true, sections: false, headingIds: 'off', extensions: ['heading_level_shift']))->renderResult("`<h3 id=\"raw\">Real preview</h3>`{=html}\n\n# Real\n");
+        self::assertSame(2, $noSections->toc()[0]['level']);
+        self::assertSame('', $noSections->toc()[0]['id']);
         $dataId = new CarveRenderer(extensions: [['type' => 'default_attributes', 'defaults' => ['heading' => ['data-id' => 'wrong']]]]);
         self::assertSame('Real', $dataId->renderResult("# Real\n")->toc()[0]['id']);
     }

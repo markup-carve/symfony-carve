@@ -13,6 +13,7 @@ use MarkupCarve\Carve\Extension\Bundle;
 use MarkupCarve\Carve\Extension\DocumentTransform;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\Extensions;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Include\IncludeResolver;
 use MarkupCarve\Carve\Node;
@@ -211,7 +212,11 @@ final class CarveRenderer
             $frontmatter = null;
             $this->collectMetadata($tree, $toc, $frontmatter);
             $html = $this->renderEngine($tree, $this->engineOptions);
-            self::applyRenderedHeadingShapes($toc, self::renderedHeadingShapes($html));
+            if ($this->rawHtml && !$this->sections) {
+                $this->applyTransformedHeadingShapes($toc, $tree);
+            } else {
+                self::applyRenderedHeadingShapes($toc, self::renderedHeadingShapes($html));
+            }
 
             return new RenderedCarve($carve, $html, $toc, $frontmatter);
         });
@@ -410,6 +415,32 @@ final class CarveRenderer
         }
 
         return [$definitions, $transforms];
+    }
+
+    /**
+     * @param list<array{level: int, text: string, html: string, id: string}> $toc
+     * @param \MarkupCarve\Carve\Node $tree
+     */
+    private function applyTransformedHeadingShapes(array &$toc, Node $tree): void
+    {
+        [, $transforms] = self::orderedExtensions($this->engineOptions['extensions']);
+        $view = Extensions::copy($tree);
+        try {
+            foreach ($transforms as $transform) {
+                $view = ($transform->run)($view);
+            }
+        } catch (Throwable) {
+            return;
+        }
+        $changed = [];
+        $frontmatter = null;
+        $this->collectMetadata($view, $changed, $frontmatter);
+        foreach ($toc as $index => &$heading) {
+            if (isset($changed[$index])) {
+                $heading['level'] = $changed[$index]['level'];
+                $heading['id'] = $changed[$index]['id'];
+            }
+        }
     }
 
     /**
