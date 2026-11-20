@@ -6,6 +6,7 @@ namespace MarkupCarve\SymfonyCarve;
 
 use Closure;
 use InvalidArgumentException;
+use MarkupCarve\Carve\Attrs;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\CarveException;
 use MarkupCarve\Carve\Diagnostics\Diagnostic;
@@ -13,7 +14,6 @@ use MarkupCarve\Carve\Extension\Bundle;
 use MarkupCarve\Carve\Extension\DocumentTransform;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
-use MarkupCarve\Carve\Extension\Extensions;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Include\IncludeResolver;
 use MarkupCarve\Carve\Node;
@@ -208,15 +208,27 @@ final class CarveRenderer
     {
         return $this->cached('result', hash('xxh3', $carve), function () use ($carve): RenderedCarve {
             $tree = $this->parse($carve);
+            $renderedTree = null;
+            $capture = static function (Node $view) use (&$renderedTree): Node {
+                $index = 0;
+                self::markHeadings($view, $index);
+                $renderedTree = $view;
+
+                return $view;
+            };
+            $html = $this->renderEngineResult($tree, $this->engineOptions, $capture)->html;
             $toc = [];
             $frontmatter = null;
-            $this->collectMetadata($tree, $toc, $frontmatter);
-            $html = $this->renderEngine($tree, $this->engineOptions);
-            if ($this->rawHtml && !$this->sections) {
-                $this->applyTransformedHeadingShapes($toc, $tree);
-            } else {
-                self::applyRenderedHeadingShapes($toc, self::renderedHeadingShapes($html));
+            $this->collectMetadata($renderedTree ?? $tree, $toc, $frontmatter);
+            $shapes = self::markedHeadingShapes($html);
+            foreach ($toc as $index => &$heading) {
+                if (isset($shapes[$index])) {
+                    $heading['level'] = $shapes[$index]['level'];
+                    $heading['id'] = $shapes[$index]['id'] ?? '';
+                }
             }
+            unset($heading);
+            $html = preg_replace('/\sdata-carve-host-toc="\d+"/', '', $html) ?? $html;
 
             return new RenderedCarve($carve, $html, $toc, $frontmatter);
         });
@@ -370,12 +382,16 @@ final class CarveRenderer
     /**
      * @param \MarkupCarve\Carve\Node|string $source
      * @param array<string, mixed> $options
+     * @param \Closure|null $capture
      *
      * @throws \MarkupCarve\Carve\RenderError
      */
-    private function renderEngineResult(Node|string $source, array $options): RenderResult
+    private function renderEngineResult(Node|string $source, array $options, ?Closure $capture = null): RenderResult
     {
         [$options['extensions'], $transforms] = self::orderedExtensions($options['extensions']);
+        if ($capture !== null) {
+            array_push($transforms, new DocumentTransform('symfony.metadata', $capture));
+        }
 
         $result = Carve::renderWithDocumentTransforms($source, $transforms, $options);
         if (($options['strictLosses'] ?? false) === true) {
@@ -418,32 +434,6 @@ final class CarveRenderer
     }
 
     /**
-     * @param list<array{level: int, text: string, html: string, id: string}> $toc
-     * @param \MarkupCarve\Carve\Node $tree
-     */
-    private function applyTransformedHeadingShapes(array &$toc, Node $tree): void
-    {
-        [, $transforms] = self::orderedExtensions($this->engineOptions['extensions']);
-        $view = Extensions::copy($tree);
-        try {
-            foreach ($transforms as $transform) {
-                $view = ($transform->run)($view);
-            }
-        } catch (Throwable) {
-            return;
-        }
-        $changed = [];
-        $frontmatter = null;
-        $this->collectMetadata($view, $changed, $frontmatter);
-        foreach ($toc as $index => &$heading) {
-            if (isset($changed[$index])) {
-                $heading['level'] = $changed[$index]['level'];
-                $heading['id'] = $changed[$index]['id'];
-            }
-        }
-    }
-
-    /**
      * @return array<string, mixed>
      */
     private function parseOptions(): array
@@ -472,6 +462,10 @@ final class CarveRenderer
 
     private function plainText(Node $node): string
     {
+        $data = $node->f['data'] ?? null;
+        if (is_array($data) && ($data['carve.headingPermalinks'] ?? null) === 'chrome') {
+            return '';
+        }
         $text = (string)($node->f['value'] ?? '');
         foreach ($node->children ?? [] as $child) {
             $text .= $this->plainText($child);
@@ -480,77 +474,33 @@ final class CarveRenderer
         return $text;
     }
 
-    /**
-     * @param list<array{level: int, text: string, html: string, id: string}> $toc
-     * @param list<array{level: int, id: string|null, text: string, inSection: bool}> $shapes
-     */
-    private static function applyRenderedHeadingShapes(array &$toc, array $shapes): void
+    private static function markHeadings(Node $node, int &$index): void
     {
-        $sectionShapes = array_values(array_filter($shapes, static fn (array $shape): bool => $shape['inSection']));
-        if ($sectionShapes !== []) {
-            $shapes = $sectionShapes;
+        if ($node->type === 'heading') {
+            $attrs = $node->f['attrs'] ?? null;
+            $attrs = $attrs instanceof Attrs ? clone $attrs : new Attrs();
+            $attrs->setKey('data-carve-host-toc', (string)$index++);
+            $node->f['attrs'] = $attrs;
         }
-        $used = [];
-        $byId = [];
-        foreach ($shapes as $index => $shape) {
-            if ($shape['id'] !== null) {
-                $byId[$shape['id']][] = $index;
-            }
-        }
-        foreach ($toc as &$heading) {
-            $wantedId = $heading['id'];
-            $wantedText = $heading['text'];
-            $matched = null;
-            if ($wantedId !== '') {
-                while (($byId[$wantedId] ?? []) !== []) {
-                    $candidate = array_shift($byId[$wantedId]);
-                    if (!isset($used[$candidate])) {
-                        $matched = $candidate;
-
-                        break;
-                    }
-                }
-            }
-            if ($matched === null) {
-                foreach ($shapes as $index => $shape) {
-                    if (!isset($used[$index]) && $wantedText !== '' && str_contains($shape['text'], $wantedText)) {
-                        $matched = $index;
-
-                        break;
-                    }
-                }
-            }
-            if ($matched === null) {
-                foreach ($shapes as $index => $shape) {
-                    if (!isset($used[$index])) {
-                        $matched = $index;
-
-                        break;
-                    }
-                }
-            }
-            if ($matched !== null) {
-                $used[$matched] = true;
-                $heading['level'] = $shapes[$matched]['level'];
-                $heading['id'] = $shapes[$matched]['id'] ?? '';
-            }
+        foreach ($node->children ?? [] as $child) {
+            self::markHeadings($child, $index);
         }
     }
 
     /**
-     * @return list<array{level: int, id: string|null, text: string, inSection: bool}>
+     * @return array<int, array{level: int, id: string|null}>
      */
-    private static function renderedHeadingShapes(string $html): array
+    private static function markedHeadingShapes(string $html): array
     {
-        preg_match_all('/<\/?section\b[^>]*>|<h[1-6]\b[^>]*>/i', $html, $matches, PREG_OFFSET_CAPTURE);
+        preg_match_all('/<\/?section\b[^>]*>|<h[1-6]\b[^>]*>/i', $html, $matches);
         $sections = [];
-        $headings = [];
-        foreach ($matches[0] as [$tag, $offset]) {
+        $shapes = [];
+        foreach ($matches[0] as $tag) {
             if (str_starts_with($tag, '</section')) {
                 array_pop($sections);
             } elseif (str_starts_with($tag, '<section')) {
                 $sections[] = self::tagId($tag);
-            } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1) {
+            } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1 && preg_match('/\sdata-carve-host-toc="(\d+)"/', $tag, $marker) === 1) {
                 $id = self::tagId($tag);
                 if ($id === null) {
                     for ($i = count($sections) - 1; $i >= 0; --$i) {
@@ -561,24 +511,17 @@ final class CarveRenderer
                         }
                     }
                 }
-                $start = $offset + strlen($tag);
-                $end = strpos($html, '</h' . $level[1] . '>', $start);
-                $body = $end === false ? '' : substr($html, $start, $end - $start);
-                $text = trim(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-                $headings[] = ['level' => (int)$level[1], 'id' => $id, 'text' => $text, 'inSection' => $sections !== []];
+                $shapes[(int)$marker[1]] = ['level' => (int)$level[1], 'id' => $id];
             }
         }
 
-        return $headings;
+        return $shapes;
     }
 
     private static function tagId(string $tag): ?string
     {
-        if (preg_match('/(?:^|\s)id="([^"]*)"/i', $tag, $match) !== 1) {
-            return null;
-        }
-
-        return html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return preg_match('/(?:^|\s)id="([^"]*)"/i', $tag, $match) === 1
+            ? html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8') : null;
     }
 
     /**

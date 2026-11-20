@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests\Extension;
 
 use InvalidArgumentException;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Node;
 use MarkupCarve\SymfonyCarve\CarveBundle;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\Extension\EngineExtensionFactory;
@@ -72,6 +74,22 @@ final class EngineConfigTest extends TestCase
         $after = (new CarveRenderer(extensions: ['heading_permalinks', $defaults]))->render("# Hello\n");
         self::assertStringNotContainsString('permalink marked', $before);
         self::assertStringContainsString('permalink marked', $after);
+    }
+
+    public function testTocCaptureRunsTransformsOnceAndIncludesHeadingNumbers(): void
+    {
+        $calls = 0;
+        $extension = new ExtensionDefinition('test.once', '1', documentTransform: static function (Node $view) use (&$calls): Node {
+            ++$calls;
+
+            return $view;
+        });
+        $renderer = new CarveRenderer(rawHtml: true, sections: false, extensions: [$extension, 'heading_numbers']);
+        $calls = 0;
+        $result = $renderer->renderResult("# Hello\n");
+        self::assertSame(1, $calls);
+        self::assertSame('1 Hello', $result->toc()[0]['text']);
+        self::assertStringNotContainsString('data-carve-host-toc', $result->html);
     }
 
     public function testSoftBreakAndNullableProfile(): void
