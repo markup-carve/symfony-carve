@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve;
 
 use Closure;
-use DOMDocument;
-use DOMElement;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\CarveException;
@@ -206,11 +204,18 @@ final class CarveRenderer
     {
         return $this->cached('result', hash('xxh3', $carve), function () use ($carve): RenderedCarve {
             $tree = $this->parse($carve);
+            $toc = [];
             $frontmatter = null;
-            $this->collectFrontmatter($tree, $frontmatter);
+            $this->collectMetadata($tree, $toc, $frontmatter);
             $html = $this->renderEngine($tree, $this->engineOptions);
+            foreach (self::renderedHeadingShapes($html) as $index => $shape) {
+                if (isset($toc[$index])) {
+                    $toc[$index]['level'] = $shape['level'];
+                    $toc[$index]['id'] = $shape['id'] ?? '';
+                }
+            }
 
-            return new RenderedCarve($carve, $html, self::renderedHeadings($html), $frontmatter);
+            return new RenderedCarve($carve, $html, $toc, $frontmatter);
         });
     }
 
@@ -395,49 +400,71 @@ final class CarveRenderer
 
     /**
      * @param \MarkupCarve\Carve\Node $node
+     * @param list<array{level: int, text: string, html: string, id: string}> $toc
      * @param array{format: string, content: string}|null $frontmatter
      */
-    private function collectFrontmatter(Node $node, ?array &$frontmatter): void
+    private function collectMetadata(Node $node, array &$toc, ?array &$frontmatter): void
     {
         if ($node->type === 'frontmatter') {
             $frontmatter = ['format' => (string)$node->f['format'], 'content' => (string)$node->f['value']];
         }
+        if ($node->type === 'heading') {
+            $text = $this->plainText($node);
+            $toc[] = ['level' => (int)$node->f['level'], 'text' => $text, 'html' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 'id' => (string)($node->f['generatedId'] ?? $node->f['id'] ?? '')];
+        }
         foreach ($node->children ?? [] as $child) {
-            $this->collectFrontmatter($child, $frontmatter);
+            $this->collectMetadata($child, $toc, $frontmatter);
         }
     }
 
-    /**
-     * @return list<array{level: int, text: string, html: string, id: string}>
-     */
-    private static function renderedHeadings(string $html): array
+    private function plainText(Node $node): string
     {
-        $document = new DOMDocument();
-        $document->loadHTML('<meta charset="utf-8"><body>' . $html . '</body>', LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_NONET);
-        $toc = [];
-        foreach ($document->getElementsByTagName('*') as $element) {
-            if (preg_match('/^h([1-6])$/', $element->tagName, $match) !== 1) {
-                continue;
-            }
-            $id = $element->getAttribute('id');
-            for ($parent = $element->parentNode; $id === '' && $parent instanceof DOMElement; $parent = $parent->parentNode) {
-                if ($parent->tagName === 'section') {
-                    $id = $parent->getAttribute('id');
-                }
-            }
-            $heading = $element->cloneNode(true);
-            if ($heading instanceof DOMElement) {
-                foreach (iterator_to_array($heading->getElementsByTagName('a')) as $anchor) {
-                    if (str_contains(' ' . $anchor->getAttribute('class') . ' ', ' permalink ')) {
-                        $anchor->parentNode?->removeChild($anchor);
-                    }
-                }
-            }
-            $text = trim($heading->textContent ?? '');
-            $toc[] = ['level' => (int)$match[1], 'text' => $text, 'html' => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 'id' => $id];
+        $text = (string)($node->f['value'] ?? '');
+        foreach ($node->children ?? [] as $child) {
+            $text .= $this->plainText($child);
         }
 
-        return $toc;
+        return $text;
+    }
+
+    /**
+     * @return list<array{level: int, id: string|null}>
+     */
+    private static function renderedHeadingShapes(string $html): array
+    {
+        preg_match_all('/<\/?section\b[^>]*>|<h[1-6]\b[^>]*>/i', $html, $matches);
+        $sections = [];
+        $headings = [];
+        foreach ($matches[0] as $tag) {
+            if (str_starts_with($tag, '</section')) {
+                array_pop($sections);
+            } elseif (str_starts_with($tag, '<section')) {
+                $sections[] = self::tagId($tag);
+            } elseif (preg_match('/^<h([1-6])\b/i', $tag, $level) === 1) {
+                $id = self::tagId($tag);
+                if ($id === null) {
+                    for ($i = count($sections) - 1; $i >= 0; --$i) {
+                        if ($sections[$i] !== null) {
+                            $id = $sections[$i];
+
+                            break;
+                        }
+                    }
+                }
+                $headings[] = ['level' => (int)$level[1], 'id' => $id];
+            }
+        }
+
+        return $headings;
+    }
+
+    private static function tagId(string $tag): ?string
+    {
+        if (preg_match('/\bid="([^"]*)"/i', $tag, $match) !== 1) {
+            return null;
+        }
+
+        return html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /**

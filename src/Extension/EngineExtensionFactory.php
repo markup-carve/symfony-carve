@@ -134,7 +134,7 @@ class EngineExtensionFactory
         }
         if ($type === 'heading_levels') {
             self::acceptKeys($config, ['type', 'offset']);
-            $offset = $config['offset'] ?? 0;
+            $offset = $config['offset'] ?? 1;
             if (!is_int($offset)) {
                 throw new InvalidArgumentException('Heading level offset must be an integer.');
             }

@@ -41,6 +41,11 @@ final class EngineConfigTest extends TestCase
         self::assertNotSame('', (new CarveRenderer(extensions: [$entry]))->render('hello'));
     }
 
+    public function testHeadingLevelsDefaultsToOneLevel(): void
+    {
+        self::assertStringContainsString('<h2>Title</h2>', (new CarveRenderer(extensions: ['heading_levels']))->render("# Title\n"));
+    }
+
     public function testExternalLinksNofollowOption(): void
     {
         $entry = ['type' => 'external_links', 'nofollow' => true];
@@ -81,6 +86,8 @@ final class EngineConfigTest extends TestCase
         self::assertStringContainsString('<p>hello</p>', $positional->render('hello'));
         $result = (new CarveRenderer(headingIds: 'lower', extensions: ['heading_level_shift', 'heading_permalinks']))->renderResult("# My Title\n");
         self::assertSame([['level' => 2, 'text' => 'My Title', 'html' => 'My Title', 'id' => 'my-title']], $result->toc());
+        $custom = (new CarveRenderer(extensions: [['type' => 'heading_permalinks', 'css_class' => 'anchor-link']]))->renderResult("# Hello\n");
+        self::assertSame('Hello', $custom->toc()[0]['text']);
     }
 
     public function testPlantumlAlias(): void
