@@ -100,6 +100,11 @@ final class EngineConfigTest extends TestCase
         $trusted = (new CarveRenderer(rawHtml: true, extensions: ['heading_level_shift']))->renderResult("`<h2 id=\"manual\">Manual</h2>`{=html}\n\n# Real\n");
         self::assertSame('Real', $trusted->toc()[0]['id']);
         self::assertSame(2, $trusted->toc()[0]['level']);
+        $duplicate = (new CarveRenderer(rawHtml: true, headingIds: 'lower', extensions: ['heading_level_shift']))->renderResult("`<h2 id=\"manual\">My Title</h2>`{=html}\n\n# My Title\n");
+        self::assertSame('my-title', $duplicate->toc()[0]['id']);
+        $noIds = (new CarveRenderer(rawHtml: true, headingIds: 'off', extensions: ['heading_level_shift']))->renderResult("`<h3 id=\"raw\">Real preview</h3>`{=html}\n\n# Real\n");
+        self::assertSame(2, $noIds->toc()[0]['level']);
+        self::assertSame('', $noIds->toc()[0]['id']);
         $dataId = new CarveRenderer(extensions: [['type' => 'default_attributes', 'defaults' => ['heading' => ['data-id' => 'wrong']]]]);
         self::assertSame('Real', $dataId->renderResult("# Real\n")->toc()[0]['id']);
     }

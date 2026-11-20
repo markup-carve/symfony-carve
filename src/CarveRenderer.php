@@ -451,10 +451,14 @@ final class CarveRenderer
 
     /**
      * @param list<array{level: int, text: string, html: string, id: string}> $toc
-     * @param list<array{level: int, id: string|null, text: string}> $shapes
+     * @param list<array{level: int, id: string|null, text: string, inSection: bool}> $shapes
      */
     private static function applyRenderedHeadingShapes(array &$toc, array $shapes): void
     {
+        $sectionShapes = array_values(array_filter($shapes, static fn (array $shape): bool => $shape['inSection']));
+        if ($sectionShapes !== []) {
+            $shapes = $sectionShapes;
+        }
         $used = [];
         $byId = [];
         foreach ($shapes as $index => $shape) {
@@ -503,7 +507,7 @@ final class CarveRenderer
     }
 
     /**
-     * @return list<array{level: int, id: string|null, text: string}>
+     * @return list<array{level: int, id: string|null, text: string, inSection: bool}>
      */
     private static function renderedHeadingShapes(string $html): array
     {
@@ -530,7 +534,7 @@ final class CarveRenderer
                 $end = strpos($html, '</h' . $level[1] . '>', $start);
                 $body = $end === false ? '' : substr($html, $start, $end - $start);
                 $text = trim(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-                $headings[] = ['level' => (int)$level[1], 'id' => $id, 'text' => $text];
+                $headings[] = ['level' => (int)$level[1], 'id' => $id, 'text' => $text, 'inSection' => $sections !== []];
             }
         }
 
