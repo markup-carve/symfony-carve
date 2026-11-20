@@ -43,6 +43,9 @@ final class ExtensionFactory
         if (!is_string($config) && !is_array($config) && !$config instanceof ExtensionDefinition && !$config instanceof ExtensionProvider) {
             throw new InvalidArgumentException('A Carve extension entry needs a type.');
         }
+        if ($config === 'frontmatter' || $config === ['type' => 'frontmatter']) {
+            return [];
+        }
         if (is_string($config) && in_array($config, self::TYPES, true)) {
             return $config === 'plantuml'
                 ? [$this->diagram('plantuml'), $this->diagram('puml')]

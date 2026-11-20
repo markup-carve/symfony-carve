@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MarkupCarve\SymfonyCarve\CarveBundle;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\Extension\EngineExtensionFactory;
+use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Configuration;
@@ -61,6 +62,11 @@ final class EngineConfigTest extends TestCase
         $resolved = (new Processor())->processConfiguration($configuration, [['profile' => null, 'soft_break_mode' => 'space']]);
         self::assertNull($resolved['profile']);
         self::assertSame('space', $resolved['soft_break_mode']);
+    }
+
+    public function testCoreFrontmatterAliasRemainsAccepted(): void
+    {
+        self::assertSame([], (new ExtensionFactory())->create('frontmatter'));
     }
 
     public function testPlantumlAlias(): void
