@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use MarkupCarve\Carve\Carve;
-use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\Carve\Output\OutputWriter;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use RuntimeException;
 
 final class CarvePortTest extends TestCase
 {
@@ -50,12 +47,10 @@ final class CarvePortTest extends TestCase
         self::assertSame('2', (new CarveRenderer(writers: $registry))->renderText("one\n\ntwo\n"));
     }
 
-    public function testMissingWriterReportsItsTarget(): void
+    public function testBuiltInPlainWriterServesTheTextEntryPoint(): void
     {
-        // C2-T-005: the entry point remains until carve-php issue 5235 lands.
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Carve text writer not available yet.');
-        (new CarveRenderer())->renderText('one');
+        // C2-T-005: the reserved plain writer now serves text output.
+        self::assertSame("one\n", (new CarveRenderer())->renderText('one'));
     }
 
     public function testFormatLintAndHtmlImportUseCarve(): void
@@ -70,9 +65,6 @@ final class CarvePortTest extends TestCase
     public function testStaticExtensionRenderingWaitsForTheD3Hook(): void
     {
         // C2-X-033 and D3: the static renderer channel is pending, see carve-php#5245.
-        if (!(new ReflectionClass(RenderHost::class))->hasProperty('mode')) {
-            $this->markTestSkipped('Pending carve-php#5245.');
-        }
         $html = (new CarveRenderer(mode: 'static', diagrams: ['mermaid']))->render("```mermaid\ngraph TD; A-->B\n```\n");
         self::assertStringContainsString('<code class="language-mermaid">', $html);
     }

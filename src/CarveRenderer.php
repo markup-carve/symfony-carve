@@ -119,9 +119,6 @@ final class CarveRenderer
         }
         $diagramNames = array_values(array_filter($diagrams, static fn (mixed $name): bool => in_array($name, ExtensionFactory::TYPES, true) && $name !== 'tabs'));
         $definitions = (new ExtensionFactory())->createAll(array_merge($extensions, $diagramNames));
-        if ($mode === 'static' && $definitions !== []) {
-            throw new RuntimeException('Carve 0.2 static extension renderer is not available yet.');
-        }
         $engineOptions = [
             'rawHtml' => $rawHtml,
             'profile' => $profile,
@@ -153,7 +150,7 @@ final class CarveRenderer
         }
         $this->activeCache = $cacheable ? $cache : null;
         $this->cacheSignature = hash('xxh3', serialize([
-            'carve-php-next2-db1624d', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
+            'carve-php-next2-14a3fab', $rawHtml, $urlPolicy, $profile, $includeRoot, $mode, $sections,
             $headingIds, $symbols, $sourceLines, $smartTypography, $labels, $diagrams, $extensionState, $cacheVersion,
         ]));
     }
@@ -323,7 +320,8 @@ final class CarveRenderer
     private function writeTarget(string $target, string $source, ?string $path = null): string
     {
         $registry = $this->writers ?? Carve::writers();
-        if (!$registry->has($target)) {
+        $writerTarget = $target === 'text' && !$registry->has('text') ? 'plain' : $target;
+        if (!$registry->has($writerTarget)) {
             throw new RuntimeException(sprintf('Carve %s writer not available yet.', $target));
         }
         $options = $this->parseOptions();
@@ -331,7 +329,11 @@ final class CarveRenderer
             $options['includes'] = ['resolver' => $this->includeResolver, 'file' => $path];
         }
 
-        return Carve::writeTo($target, Carve::parse($source, $options), $this->engineOptions, $registry);
+        $writerOptions = $writerTarget === $target && !in_array($target, ['markdown', 'plain', 'ansi'], true)
+            ? $this->engineOptions
+            : array_intersect_key($this->engineOptions, array_flip(['smartTypography', 'urlPolicy', 'strictLosses']));
+
+        return Carve::writeTo($writerTarget, Carve::parse($source, $options), $writerOptions, $registry);
     }
 
     /**

@@ -7,7 +7,6 @@ namespace MarkupCarve\SymfonyCarve;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\Include\FileResolver;
-use RuntimeException;
 use Throwable;
 
 final class CarveTools
@@ -73,7 +72,7 @@ final class CarveTools
 
     public function fromMarkdown(string $source): string
     {
-        throw new RuntimeException('Carve 0.2 Markdown importer is not available yet.');
+        return Carve::importDocument($source, ['from' => 'markdown'])->source;
     }
 
     public function fromHtml(string $source): string
@@ -83,7 +82,7 @@ final class CarveTools
 
     public function fromDjot(string $source): string
     {
-        throw new RuntimeException('Carve 0.2 Djot importer is not available yet.');
+        return Carve::importDocument($source, ['from' => 'djot'])->source;
     }
 
     public function import(string $source, string $from): string

@@ -77,9 +77,6 @@ final class CarveToolsTest extends TestCase
     {
         // C2-T-003: these two importers are pending, see carve-php#5237 and #5242.
         $api = new ReflectionClass(Carve::class);
-        if (!$api->hasMethod('importMarkdown') || !$api->hasMethod('importDjot')) {
-            $this->markTestSkipped('Pending carve-php#5237 and carve-php#5242.');
-        }
         $tools = new CarveTools();
 
         self::assertSame('*bold*', trim($tools->import('**bold**', 'markdown')));

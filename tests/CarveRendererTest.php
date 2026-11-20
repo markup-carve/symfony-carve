@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -230,9 +229,6 @@ final class CarveRendererTest extends TestCase
     public function testRendersPlainText(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5235.
-        if (!Carve::writers()->has('text')) {
-            $this->markTestSkipped('Pending carve-php#5235.');
-        }
         $text = (new CarveRenderer())->renderText('# Hello *world*');
 
         $this->assertSame("Hello world\n", $text);
@@ -241,9 +237,6 @@ final class CarveRendererTest extends TestCase
     public function testRendersMarkdown(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5235.
-        if (!Carve::writers()->has('markdown')) {
-            $this->markTestSkipped('Pending carve-php#5235.');
-        }
         $markdown = (new CarveRenderer())->renderMarkdown('# Hello *world*');
 
         $this->assertSame("# Hello **world**\n", $markdown);
@@ -258,30 +251,22 @@ final class CarveRendererTest extends TestCase
     }
 
     /**
-     * The minimal profile denies images, so both non-HTML targets must degrade
-     * the image to its alt text instead of emitting a reference to the file.
-     * The assertions deliberately avoid pinning the Markdown renderer's
-     * bracket-escaping, which is a detail of that renderer rather than of the
-     * profile being applied.
+     * C2-T-005 gives export targets their own options. A render profile applies
+     * to HTML and does not change the source tree passed to an exporter.
      */
-    public function testProfileAppliesToTextAndMarkdownRenderers(): void
+    public function testExportTargetsUseTheirOwnOptions(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5235.
-        if (!Carve::writers()->has('text')) {
-            $this->markTestSkipped('Pending carve-php#5235.');
-        }
         $renderer = new CarveRenderer(profile: 'minimal');
         $source = '![alt](https://example.com/image.png)';
 
         $text = $renderer->renderText($source);
         $markdown = $renderer->renderMarkdown($source);
 
-        $this->assertStringContainsString('img: alt', $text);
+        $this->assertSame("alt\n", $text);
         $this->assertStringNotContainsString('example.com', $text);
 
-        $this->assertStringContainsString('img: alt', $markdown);
-        $this->assertStringNotContainsString('example.com', $markdown);
-        $this->assertStringNotContainsString('!', $markdown);
+        $this->assertSame($source . "\n", $markdown);
     }
 
     public function testDiagramsDefaultLeavesFencedBlockUnchanged(): void
