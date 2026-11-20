@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 final class RenderOptionsTest extends TestCase
 {
@@ -89,9 +87,6 @@ final class RenderOptionsTest extends TestCase
     public function testExtensionsAreBuiltFromConfigEntries(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5236.
-        if (!(new ReflectionClass(ExtensionDefinition::class))->hasMethod('withHeadingPermalink')) {
-            $this->markTestSkipped('Pending carve-php#5236.');
-        }
         $renderer = new CarveRenderer(extensions: [
             'autolink',
             ['type' => 'heading_permalinks', 'symbol' => '#'],
@@ -163,9 +158,6 @@ final class RenderOptionsTest extends TestCase
     public function testRenderAnsi(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5235.
-        if (!Carve::writers()->has('ansi')) {
-            $this->markTestSkipped('Pending carve-php#5235.');
-        }
         self::assertStringContainsString("\e[", (new CarveRenderer())->renderAnsi('*bold*'));
     }
 }

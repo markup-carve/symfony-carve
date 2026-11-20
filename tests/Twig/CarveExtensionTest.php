@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Tests\Twig;
 
-use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
 use PHPUnit\Framework\TestCase;
@@ -52,9 +51,6 @@ final class CarveExtensionTest extends TestCase
     public function testTextFilterRendersAndIsEscaped(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5235.
-        if (!Carve::writers()->has('text')) {
-            $this->markTestSkipped('Pending carve-php#5235.');
-        }
         $twig = new Environment(new ArrayLoader([
             'tpl' => '{{ source|carve_text }}',
         ]));
@@ -68,9 +64,6 @@ final class CarveExtensionTest extends TestCase
     public function testMarkdownFilterRendersAndIsEscaped(): void
     {
         // C2-H-137: pending Carve API, see carve-php#5235.
-        if (!Carve::writers()->has('markdown')) {
-            $this->markTestSkipped('Pending carve-php#5235.');
-        }
         $twig = new Environment(new ArrayLoader([
             'tpl' => '{{ source|carve_markdown }}',
         ]));

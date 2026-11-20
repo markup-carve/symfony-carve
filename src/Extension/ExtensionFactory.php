@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Extension\Claim;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\Navigation;
 use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Extension\Tabs;
 use MarkupCarve\Carve\Node;
@@ -57,7 +58,28 @@ final class ExtensionFactory
         if ($type === 'tabs' && $config === []) {
             return Tabs::extensions(true);
         }
-        if (in_array($type, ['frontmatter', 'table_of_contents', 'autolink', 'smart_quotes'], true)) {
+        if ($type === 'heading_permalinks') {
+            $options = [];
+            foreach (['symbol', 'cssClass', 'ariaLabel', 'levels', 'prepend', 'showOnHover', 'copyToClipboard'] as $key) {
+                if (array_key_exists($key, $config)) {
+                    $options[$key] = $config[$key];
+                    unset($config[$key]);
+                }
+            }
+            if ($config !== []) {
+                throw new InvalidArgumentException(sprintf('Unknown heading permalink option "%s".', (string)array_key_first($config)));
+            }
+
+            return [Navigation::headingPermalinks(...$options)];
+        }
+        if ($type === 'autolink') {
+            if ($config !== []) {
+                throw new InvalidArgumentException(sprintf('Unknown option "%s" for core Carve 0.2 extension "%s".', (string)array_key_first($config), $type));
+            }
+
+            return [Navigation::autolink()];
+        }
+        if (in_array($type, ['frontmatter', 'table_of_contents', 'smart_quotes'], true)) {
             if ($config !== []) {
                 throw new InvalidArgumentException(sprintf('Unknown option "%s" for core Carve 0.2 extension "%s".', (string)array_key_first($config), $type));
             }
