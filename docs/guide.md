@@ -76,6 +76,6 @@ The `wikilinks` shortcut accepts `url_template` for explicit `:wiki[Page]` links
 
 `CarveTools::format()` uses `Carve::format()`. `lint()` maps Carve diagnostics to `LintFinding` objects with `rule`, `message`, `file`, `line`, and `column`. `fromHtml()` uses the Carve HTML importer. `ValidCarve` uses Carve parse and render diagnostics for strict and profile validation; its `lint` flag calls the 0.2 lint catalog.
 
-Commands remain `carve:render`, `carve:fmt`, `carve:lint`, `carve:convert`. `carve:convert` accepts `html`, `markdown`, and `djot` to preserve its command contract. Markdown and Djot import report that their 0.2 importer is unavailable. See carve-php issues 5237 and 5242.
+Commands remain `carve:render`, `carve:fmt`, `carve:lint`, `carve:convert`. `carve:convert` accepts `html`, `markdown`, `gfm` and `djot`. `markdown` and `gfm` both read GitHub Flavored Markdown, as the 0.1 command did, so tables, task lists and strikethrough convert; `CarveTools::fromMarkdown()` does the same.
 
 The Markdown, text, and ANSI output writers are pending in carve-php issue 5235. The bundle keeps `renderMarkdown()`, `renderText()`, `renderAnsi()`, the Twig filters, and the command formats so callers can use them when writers arrive. Tests for those upstream gaps remain named skips.

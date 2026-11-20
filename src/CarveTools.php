@@ -14,7 +14,7 @@ final class CarveTools
     /**
      * @var array<string>
      */
-    public const IMPORT_FORMATS = ['markdown', 'html', 'djot'];
+    public const IMPORT_FORMATS = ['markdown', 'gfm', 'html', 'djot'];
 
     public function format(string $source, bool $alignTables = false): string
     {
@@ -70,9 +70,12 @@ final class CarveTools
         return $result;
     }
 
+    /**
+     * Reads GitHub Flavored Markdown, as the 0.1 importer did; the engine's `markdown` format is CommonMark only.
+     */
     public function fromMarkdown(string $source): string
     {
-        return Carve::importDocument($source, ['from' => 'markdown'])->source;
+        return Carve::importDocument($source, ['from' => 'gfm'])->source;
     }
 
     public function fromHtml(string $source): string
@@ -88,7 +91,7 @@ final class CarveTools
     public function import(string $source, string $from): string
     {
         return match ($from) {
-            'markdown' => $this->fromMarkdown($source),
+            'markdown', 'gfm' => $this->fromMarkdown($source),
             'html' => $this->fromHtml($source),
             'djot' => $this->fromDjot($source),
             default => throw new InvalidArgumentException(sprintf('Unknown import format "%s". Use %s.', $from, implode(', ', self::IMPORT_FORMATS))),
