@@ -65,6 +65,15 @@ final class EngineConfigTest extends TestCase
         self::assertStringContainsString('class="note"', (new CarveRenderer(extensions: [$entry]))->render('hello'));
     }
 
+    public function testDocumentTransformsFollowConfigurationOrder(): void
+    {
+        $defaults = ['type' => 'default_attributes', 'defaults' => ['link' => ['class' => 'marked']]];
+        $before = (new CarveRenderer(extensions: [$defaults, 'heading_permalinks']))->render("# Hello\n");
+        $after = (new CarveRenderer(extensions: ['heading_permalinks', $defaults]))->render("# Hello\n");
+        self::assertStringNotContainsString('permalink marked', $before);
+        self::assertStringContainsString('permalink marked', $after);
+    }
+
     public function testSoftBreakAndNullableProfile(): void
     {
         $renderer = new CarveRenderer(profile: null, softBreak: 'space');
@@ -88,6 +97,11 @@ final class EngineConfigTest extends TestCase
         self::assertSame([['level' => 2, 'text' => 'My Title', 'html' => 'My Title', 'id' => 'my-title']], $result->toc());
         $custom = (new CarveRenderer(extensions: [['type' => 'heading_permalinks', 'css_class' => 'anchor-link']]))->renderResult("# Hello\n");
         self::assertSame('Hello', $custom->toc()[0]['text']);
+        $trusted = (new CarveRenderer(rawHtml: true, extensions: ['heading_level_shift']))->renderResult("`<h2 id=\"manual\">Manual</h2>`{=html}\n\n# Real\n");
+        self::assertSame('Real', $trusted->toc()[0]['id']);
+        self::assertSame(2, $trusted->toc()[0]['level']);
+        $dataId = new CarveRenderer(extensions: [['type' => 'default_attributes', 'defaults' => ['heading' => ['data-id' => 'wrong']]]]);
+        self::assertSame('Real', $dataId->renderResult("# Real\n")->toc()[0]['id']);
     }
 
     public function testPlantumlAlias(): void
