@@ -1,6 +1,6 @@
 # Symfony Carve 0.2 guide
 
-This bundle targets the Carve public API in the unreleased `next2` branch of carve-php. The engine is pinned by commit in Composer. Carve 0.1 remains available on this repository's `main` branch.
+This bundle targets the Carve public API on the `main` branch of carve-php (unreleased). The engine is pinned by commit in Composer. Carve 0.1 remains available on this repository's `0.1` branch.
 
 ## Services and Twig
 
