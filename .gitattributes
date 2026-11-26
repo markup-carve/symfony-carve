@@ -15,3 +15,9 @@ phpcs.xml export-ignore
 .editorconfig export-ignore
 renovate.json export-ignore
 tests/ export-ignore
+/docs/.vitepress export-ignore
+/docs/public export-ignore
+/docs/index.md export-ignore
+/docs/package.json export-ignore
+/docs/package-lock.json export-ignore
+/scripts/build-versioned-docs.sh export-ignore
