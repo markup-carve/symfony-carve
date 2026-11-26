@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Command;
 
 use MarkupCarve\SymfonyCarve\CarveTools;
+use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,7 +26,7 @@ final class ConvertCommand extends Command
     {
         $this
             ->addArgument('path', InputArgument::REQUIRED, 'The Markdown, HTML or Djot file to convert')
-            ->addOption('from', null, InputOption::VALUE_REQUIRED, 'markdown, html or djot (guessed from the file extension)')
+            ->addOption('from', null, InputOption::VALUE_REQUIRED, 'markdown (GitHub Flavored), gfm, html or djot (guessed from the file extension)')
             ->addOption('output', 'o', InputOption::VALUE_REQUIRED, 'Write to this file instead of the console');
     }
 
@@ -54,6 +55,14 @@ final class ConvertCommand extends Command
         }
         $target = $input->getOption('output');
 
-        return CarveFiles::emit($this->tools->import($source, $from), is_string($target) ? $target : null, $io) ? Command::SUCCESS : Command::FAILURE;
+        try {
+            $converted = $this->tools->import($source, $from);
+        } catch (RuntimeException $exception) {
+            $io->error($exception->getMessage());
+
+            return Command::FAILURE;
+        }
+
+        return CarveFiles::emit($converted, is_string($target) ? $target : null, $io) ? Command::SUCCESS : Command::FAILURE;
     }
 }

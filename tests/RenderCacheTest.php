@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\Extension\WikilinksExtension;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -52,12 +52,13 @@ final class RenderCacheTest extends TestCase
     public function testAClosureExtensionDisablesCachingWithoutAVersion(): void
     {
         $pool = new ArrayAdapter();
-        $extension = new WikilinksExtension(urlGenerator: static fn (string $page): string => '/' . $page);
+        // C2-X-001: cache fingerprinting now uses an immutable extension definition.
+        $extension = new ExtensionDefinition('test.cache', '1', renderer: static fn (): string => '');
 
-        (new CarveRenderer(extensions: [$extension], cache: $pool))->render('[[a]]');
+        (new CarveRenderer(extensions: [$extension], cache: $pool))->render('text');
         self::assertSame([], $pool->getValues());
 
-        (new CarveRenderer(extensions: [$extension], cache: $pool, cacheVersion: '1'))->render('[[a]]');
+        (new CarveRenderer(extensions: [$extension], cache: $pool, cacheVersion: '1'))->render('text');
         self::assertCount(1, $pool->getValues());
     }
 

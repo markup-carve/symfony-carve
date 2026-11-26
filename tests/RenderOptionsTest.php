@@ -5,42 +5,46 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\Extension\TableOfContentsExtension;
+use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 
 final class RenderOptionsTest extends TestCase
 {
-    public function testStrictSafeModeIsAccepted(): void
+    public function testRawHtmlDefaultsOffAndUnsafeUrlsAreDenied(): void
     {
-        $html = (new CarveRenderer(safeMode: 'strict'))->render('[x](javascript:alert(1))');
+        $html = (new CarveRenderer(rawHtml: false))->render('[x](javascript:alert(1))');
 
         self::assertStringNotContainsString('javascript:', $html);
     }
 
-    public function testAnUnknownSafeModeIsRefused(): void
+    public function testAnUnknownUrlPolicyFieldIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new CarveRenderer(safeMode: 'loose');
+        // C2-H-128: URL policy rejects unknown keys.
+        new CarveRenderer(urlPolicy: ['wrong' => []]);
     }
 
-    public function testSoftBreakModeBr(): void
+    public function testSectionsOptionControlsHeadingWrapper(): void
     {
-        self::assertStringContainsString('<br>', (new CarveRenderer(softBreakMode: 'br'))->render("a\nb"));
-        self::assertStringNotContainsString('<br', (new CarveRenderer())->render("a\nb"));
+        // C2-H-137: sections replaces the removed soft break option.
+        self::assertStringNotContainsString('<section', (new CarveRenderer(sections: false))->render('# A'));
+        self::assertStringContainsString('<section', (new CarveRenderer())->render('# A'));
     }
 
-    public function testAnUnknownSoftBreakModeIsRefused(): void
+    public function testAnUnknownHeadingIdModeIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new CarveRenderer(softBreakMode: 'tab');
+        // C2-H-131: heading IDs use the 0.2 enumeration.
+        new CarveRenderer(headingIds: 'unknown');
     }
 
-    public function testXhtmlSelfClosesVoidElements(): void
+    public function testHtmlWriterUsesHtmlVoidSpelling(): void
     {
-        self::assertStringContainsString('<hr />', (new CarveRenderer(xhtml: true))->render('***'));
+        // C2-H-137: XHTML is no longer an option; the HTML writer uses HTML spelling.
+        self::assertStringContainsString('<hr>', (new CarveRenderer())->render('***'));
     }
 
     public function testSourceLinesAddLineAttributes(): void
@@ -63,23 +67,26 @@ final class RenderOptionsTest extends TestCase
         new CarveRenderer(mode: 'print');
     }
 
-    public function testOnDisallowedToTextKeepsTheText(): void
+    public function testCommentProfileKeepsDisallowedText(): void
     {
-        $html = (new CarveRenderer(profile: 'comment', onDisallowed: 'to_text'))->render('# Title');
+        // C2-H-129: the comment profile controls disallowed headings.
+        $html = (new CarveRenderer(profile: 'comment'))->render('# Title');
 
         self::assertStringNotContainsString('<h1', $html);
         self::assertStringContainsString('Title', $html);
     }
 
-    public function testAnUnknownOnDisallowedActionIsRefused(): void
+    public function testAnUnknownProfileIsRefused(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new CarveRenderer(profile: 'comment', onDisallowed: 'shout');
+        // C2-H-129: profiles use the 0.2 enumeration.
+        new CarveRenderer(profile: 'unknown');
     }
 
     public function testExtensionsAreBuiltFromConfigEntries(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5236.
         $renderer = new CarveRenderer(extensions: [
             'autolink',
             ['type' => 'heading_permalinks', 'symbol' => '#'],
@@ -100,12 +107,13 @@ final class RenderOptionsTest extends TestCase
 
     public function testAnExtensionInstanceIsClonedPerRender(): void
     {
-        $toc = new TableOfContentsExtension();
-        $renderer = new CarveRenderer(extensions: [$toc]);
+        // C2-X-001: immutable extension definitions can be reused without state leaks.
+        $definition = new ExtensionDefinition('test.metadata', '1');
+        $renderer = new CarveRenderer(extensions: [$definition]);
 
         self::assertCount(1, $renderer->renderResult('# One')->toc());
         self::assertCount(1, $renderer->renderResult('# Two')->toc());
-        self::assertSame([], $toc->getToc());
+        self::assertSame('test.metadata', $definition->name);
     }
 
     public function testAnUnknownExtensionIsRefusedAtConstruction(): void
@@ -135,7 +143,8 @@ final class RenderOptionsTest extends TestCase
 
     public function testRenderResultCarriesTocAndFrontmatter(): void
     {
-        $renderer = new CarveRenderer(extensions: ['frontmatter']);
+        // C2-A-021: frontmatter is a core tree node in 0.2.
+        $renderer = new CarveRenderer();
         $result = $renderer->renderResult("---json\n{\"title\": \"Hi\"}\n---\n\n# One\n\n## Two\n");
 
         self::assertSame(['One', 'Two'], array_column($result->toc(), 'text'));
@@ -148,6 +157,7 @@ final class RenderOptionsTest extends TestCase
 
     public function testRenderAnsi(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         self::assertStringContainsString("\e[", (new CarveRenderer())->renderAnsi('*bold*'));
     }
 }

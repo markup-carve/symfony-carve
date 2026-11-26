@@ -21,6 +21,7 @@ final class RenderCommandTest extends CommandTestCase
 
     public function testRendersTextMarkdownAndAnsi(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         $path = $this->file('a.crv', "# Title\n\n*bold*\n");
         $tester = new CommandTester(new RenderCommand(new CarveRenderer()));
 
@@ -34,10 +35,22 @@ final class RenderCommandTest extends CommandTestCase
 
     public function testExpandsIncludesBelowTheConfiguredRoot(): void
     {
+        // C2-T-005: the text writer is pending, see carve-php#5235.
         $this->file('part.crv', "Included.\n");
         $tester = new CommandTester(new RenderCommand(new CarveRenderer(includeRoot: $this->dir)));
 
         $tester->execute(['path' => $this->file('main.crv', "{{ part.crv }}\n"), '--format' => 'text']);
+
+        self::assertStringContainsString('Included.', $tester->getDisplay());
+    }
+
+    public function testExpandsIncludesInHtmlOnCarve(): void
+    {
+        // C2-N-012: the 0.2 file resolver expands a contained file.
+        $this->file('part.crv', "Included.\n");
+        $tester = new CommandTester(new RenderCommand(new CarveRenderer(includeRoot: $this->dir)));
+
+        $tester->execute(['path' => $this->file('main.crv', "{{ part.crv }}\n"), '--format' => 'html']);
 
         self::assertStringContainsString('Included.', $tester->getDisplay());
     }

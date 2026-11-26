@@ -11,7 +11,6 @@ use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use MarkupCarve\SymfonyCarve\Command\FormatCommand;
 use MarkupCarve\SymfonyCarve\Command\LintCommand;
 use MarkupCarve\SymfonyCarve\Command\RenderCommand;
-use MarkupCarve\SymfonyCarve\Command\TraceCommand;
 use MarkupCarve\SymfonyCarve\Twig\CarveExtension;
 use MarkupCarve\SymfonyCarve\Validator\ValidCarveValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -42,13 +41,15 @@ final class CarveBundleTest extends TestCase
     {
         $config = $this->process([]);
 
-        self::assertTrue($config['safe_mode']);
+        // C2-H-137: Carve uses rawHtml, urlPolicy, sections, and headingIds.
+        self::assertFalse($config['raw_html']);
+        self::assertSame([], $config['url_policy']);
         self::assertSame('interactive', $config['mode']);
-        self::assertNull($config['soft_break_mode']);
-        self::assertFalse($config['xhtml']);
+        self::assertSame('full', $config['profile']);
+        self::assertTrue($config['sections']);
+        self::assertSame('keep-case', $config['heading_ids']);
         self::assertFalse($config['source_lines']);
-        self::assertNull($config['smart_typography']);
-        self::assertNull($config['on_disallowed']);
+        self::assertTrue($config['smart_typography']);
         self::assertSame([], $config['symbols']);
         self::assertSame([], $config['labels']);
         self::assertSame([], $config['extensions']);
@@ -60,13 +61,14 @@ final class CarveBundleTest extends TestCase
      */
     public static function invalidConfigs(): array
     {
+        // C2-H-137: removed 0.1 keys are replaced by the 0.2 option catalog.
         return [
-            'safe_mode string' => [['safe_mode' => 'loose']],
+            'raw_html string' => [['raw_html' => 'loose']],
             'mode' => [['mode' => 'print']],
-            'soft_break_mode' => [['soft_break_mode' => 'tab']],
-            'on_disallowed' => [['on_disallowed' => 'shout']],
+            'heading_ids' => [['heading_ids' => 'tab']],
+            'profile bad' => [['profile' => 'shout']],
             'smart_typography' => [['smart_typography' => 'yes']],
-            'extension entry' => [['extensions' => [['symbol' => '#']]]],
+            'sections string' => [['sections' => 'yes']],
             'cache ttl' => [['cache' => ['ttl' => 0]]],
         ];
     }
@@ -82,17 +84,17 @@ final class CarveBundleTest extends TestCase
         $this->process($config);
     }
 
-    public function testStrictSafeModeIsAccepted(): void
+    public function testRawHtmlCanBeExplicitlyDisabled(): void
     {
-        self::assertSame('strict', $this->process(['safe_mode' => 'strict'])['safe_mode']);
+        // C2-H-127: rawHtml is the safe-mode switch and defaults off.
+        self::assertFalse($this->process(['raw_html' => false])['raw_html']);
     }
 
     public function testTheContainerWiresEveryOptionIntoTheServices(): void
     {
         $container = $this->container([
-            'safe_mode' => 'strict',
-            'soft_break_mode' => 'br',
-            'xhtml' => true,
+            'raw_html' => false,
+            'sections' => false,
             'extensions' => ['autolink'],
             'cache' => ['enabled' => true, 'pool' => 'app.carve_pool', 'prefix' => 'site'],
         ]);
@@ -101,9 +103,11 @@ final class CarveBundleTest extends TestCase
 
         $renderer = $container->get(CarveRenderer::class);
         self::assertInstanceOf(CarveRenderer::class, $renderer);
-        $html = $renderer->render("a\nb https://example.com");
+        $html = $renderer->render("a\nb <https://example.com>");
 
-        self::assertStringContainsString('<br />', $html);
+        // C2-H-137: sections is the supported layout option.
+        self::assertStringNotContainsString('<section', $html);
+        // C2-I-151: autolinks use the explicit angle form in 0.2.
         self::assertStringContainsString('href="https://example.com"', $html);
         self::assertStringStartsWith('site.render.', (string)array_key_first($pool->getValues()));
         self::assertInstanceOf(CarveTools::class, $container->get(CarveTools::class));
@@ -121,7 +125,7 @@ final class CarveBundleTest extends TestCase
         $container = $this->container([], compile: false);
 
         self::assertEqualsCanonicalizing(
-            [RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class, TraceCommand::class],
+            [RenderCommand::class, LintCommand::class, FormatCommand::class, ConvertCommand::class],
             array_keys($container->findTaggedServiceIds('console.command')),
         );
         self::assertArrayHasKey(ValidCarveValidator::class, $container->findTaggedServiceIds('validator.constraint_validator'));
@@ -135,7 +139,7 @@ final class CarveBundleTest extends TestCase
         $loader = $container->get('console.command_loader');
         self::assertInstanceOf(CommandLoaderInterface::class, $loader);
 
-        foreach (['carve:render', 'carve:lint', 'carve:fmt', 'carve:convert', 'carve:trace'] as $name) {
+        foreach (['carve:render', 'carve:lint', 'carve:fmt', 'carve:convert'] as $name) {
             self::assertSame($name, $loader->get($name)->getName());
         }
     }

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class CarveToolsTest extends TestCase
 {
@@ -14,14 +16,16 @@ final class CarveToolsTest extends TestCase
     {
         $tools = new CarveTools();
 
-        self::assertSame("# Title\n", $tools->format("#   Title\n"));
-        self::assertTrue($tools->isFormatted("# Title\n"));
+        // C2-W-001 and U-043: the canonical heading marker is =.
+        self::assertSame("= Title\n", $tools->format("#   Title\n"));
+        self::assertTrue($tools->isFormatted("= Title\n"));
         self::assertFalse($tools->isFormatted("#   Title\n"));
     }
 
     public function testFormatAlignsTablesOnRequest(): void
     {
-        $source = "| a | bbb |\n| --- | --- |\n| cccc | d |\n";
+        // U-055: 0.2 tables use native header cells instead of a GFM separator.
+        $source = "|= a |= bbb |\n| cccc | d |\n";
         $tools = new CarveTools();
 
         $aligned = $tools->format($source, true);
@@ -51,7 +55,8 @@ final class CarveToolsTest extends TestCase
             $source = (string)file_get_contents($main);
             $findings = $tools->lint($source, $root, $main);
 
-            self::assertSame([], $tools->lint($source));
+            // C2-N-085: unresolved includes are lint findings even without a resolver.
+            self::assertSame('include-no-resolver', $tools->lint($source)[0]->rule);
             self::assertNotSame([], $findings);
             self::assertStringEndsWith('part.crv', (string)$findings[0]->file);
         } finally {
@@ -70,11 +75,29 @@ final class CarveToolsTest extends TestCase
 
     public function testImportsMarkdownHtmlAndDjot(): void
     {
+        // C2-T-003: these two importers are pending, see carve-php#5237 and #5242.
+        $api = new ReflectionClass(Carve::class);
         $tools = new CarveTools();
 
         self::assertSame('*bold*', trim($tools->import('**bold**', 'markdown')));
         self::assertSame('*bold*', trim($tools->import('<p><strong>bold</strong></p>', 'html')));
         self::assertSame('*bold*', trim($tools->import('*bold*', 'djot')));
+    }
+
+    public function testMarkdownImportReadsGitHubFlavoredMarkdown(): void
+    {
+        $tools = new CarveTools();
+        $markdown = "| a | b |\n|---|--:|\n| 1 | 2 |\n\n- [x] done\n";
+
+        self::assertSame("|= a |={>} b |\n| 1 | 2 |\n\n- [x] done\n", $tools->fromMarkdown($markdown));
+        self::assertSame($tools->fromMarkdown($markdown), $tools->import($markdown, 'gfm'));
+        self::assertSame($tools->fromMarkdown($markdown), $tools->import($markdown, 'markdown'));
+    }
+
+    public function testImportsHtmlWithCarve(): void
+    {
+        // C2-M-001: HTML import is available in Carve.
+        self::assertSame('*bold*', trim((new CarveTools())->fromHtml('<p><strong>bold</strong></p>')));
     }
 
     public function testImportRefusesAnUnknownFormat(): void

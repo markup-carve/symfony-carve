@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\SafeMode;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -206,14 +205,14 @@ final class CarveRendererTest extends TestCase
 
     public function testSafeModeStripsRawHtml(): void
     {
-        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP))->render('<script>alert(1)</script>');
+        $html = (new CarveRenderer(rawHtml: false))->render('<script>alert(1)</script>');
 
         $this->assertStringNotContainsString('<script>', $html);
     }
 
     public function testSafeModeEscapesRawHtml(): void
     {
-        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_ESCAPE))->render('<b>x</b>');
+        $html = (new CarveRenderer(rawHtml: false))->render('<b>x</b>');
 
         $this->assertStringContainsString('&lt;b&gt;', $html);
     }
@@ -229,6 +228,7 @@ final class CarveRendererTest extends TestCase
 
     public function testRendersPlainText(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         $text = (new CarveRenderer())->renderText('# Hello *world*');
 
         $this->assertSame("Hello world\n", $text);
@@ -236,6 +236,7 @@ final class CarveRendererTest extends TestCase
 
     public function testRendersMarkdown(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         $markdown = (new CarveRenderer())->renderMarkdown('# Hello *world*');
 
         $this->assertSame("# Hello **world**\n", $markdown);
@@ -250,26 +251,22 @@ final class CarveRendererTest extends TestCase
     }
 
     /**
-     * The minimal profile denies images, so both non-HTML targets must degrade
-     * the image to its alt text instead of emitting a reference to the file.
-     * The assertions deliberately avoid pinning the Markdown renderer's
-     * bracket-escaping, which is a detail of that renderer rather than of the
-     * profile being applied.
+     * C2-T-005 gives export targets their own options. A render profile applies
+     * to HTML and does not change the source tree passed to an exporter.
      */
-    public function testProfileAppliesToTextAndMarkdownRenderers(): void
+    public function testExportTargetsUseTheirOwnOptions(): void
     {
+        // C2-H-137: pending Carve API, see carve-php#5235.
         $renderer = new CarveRenderer(profile: 'minimal');
         $source = '![alt](https://example.com/image.png)';
 
         $text = $renderer->renderText($source);
         $markdown = $renderer->renderMarkdown($source);
 
-        $this->assertStringContainsString('img: alt', $text);
+        $this->assertSame("alt\n", $text);
         $this->assertStringNotContainsString('example.com', $text);
 
-        $this->assertStringContainsString('img: alt', $markdown);
-        $this->assertStringNotContainsString('example.com', $markdown);
-        $this->assertStringNotContainsString('!', $markdown);
+        $this->assertSame($source . "\n", $markdown);
     }
 
     public function testDiagramsDefaultLeavesFencedBlockUnchanged(): void
@@ -277,7 +274,7 @@ final class CarveRendererTest extends TestCase
         $carve = "``` plantuml\nA -> B\n```";
 
         $default = (new CarveRenderer())->render($carve);
-        $explicitEmpty = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, []))->render($carve);
+        $explicitEmpty = (new CarveRenderer(diagrams: []))->render($carve);
 
         // No FencedRenderExtension applied: rendered as a plain code block, and
         // the default and the explicit-empty config produce identical output.
@@ -290,29 +287,27 @@ final class CarveRendererTest extends TestCase
     {
         $carve = "``` plantuml\nA -> B\n```";
 
-        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['plantuml']))->render($carve);
+        $html = (new CarveRenderer(diagrams: ['plantuml']))->render($carve);
 
+        // C2-X-005: the 0.2 fence matcher provides the diagram renderer.
         $this->assertStringContainsString('<pre class="plantuml" role="img" aria-label="plantuml">', $html);
-        $this->assertStringContainsString('A -> B', $html);
+        // C2-X-033: extension renderer HTML escapes the diagram body.
+        $this->assertStringContainsString('A -&gt; B', $html);
     }
 
     public function testMermaidPresetRendersHydrationElement(): void
     {
         $carve = "``` mermaid\ngraph TD; A-->B\n```";
 
-        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['mermaid']))->render($carve);
+        $html = (new CarveRenderer(diagrams: ['mermaid']))->render($carve);
 
         $this->assertStringContainsString('<pre class="mermaid" role="img" aria-label="mermaid">', $html);
     }
 
-    public function testUnknownDiagramNameIsIgnored(): void
+    public function testUnknownDiagramNameIsRejected(): void
     {
-        $carve = "``` plantuml\nA -> B\n```";
-
-        $html = (new CarveRenderer(true, SafeMode::RAW_HTML_STRIP, ['nope']))->render($carve);
-
-        // Unknown preset skipped, so the plantuml fence stays a plain code block.
-        $this->assertStringNotContainsString('<pre class="plantuml"', $html);
-        $this->assertStringContainsString('<code', $html);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown Carve diagram: nope');
+        new CarveRenderer(diagrams: ['nope']);
     }
 }

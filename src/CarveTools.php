@@ -5,32 +5,20 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve;
 
 use InvalidArgumentException;
-use MarkupCarve\Carve\CarveConverter;
-use MarkupCarve\Carve\Converter\DjotToCarve;
-use MarkupCarve\Carve\Converter\HtmlToCarve;
-use MarkupCarve\Carve\Converter\MarkdownToCarve;
-use MarkupCarve\Carve\DecisionTrace;
-use MarkupCarve\Carve\Lint\DocumentLinter;
-use MarkupCarve\Carve\Lint\IncludeLinter;
-use MarkupCarve\Carve\Transform\FilesystemIncludeResolver;
-use RuntimeException;
+use MarkupCarve\Carve\Carve;
+use MarkupCarve\Carve\Include\FileResolver;
+use Throwable;
 
-/**
- * Source-level Carve operations: format, lint and import.
- */
 final class CarveTools
 {
     /**
      * @var array<string>
      */
-    public const IMPORT_FORMATS = ['markdown', 'html', 'djot'];
+    public const IMPORT_FORMATS = ['markdown', 'gfm', 'html', 'djot'];
 
-    /**
-     * Canonical Carve source, as `carve fmt` prints it.
-     */
     public function format(string $source, bool $alignTables = false): string
     {
-        return CarveConverter::toCarve($source, $alignTables);
+        return Carve::format($source, ['alignTables' => $alignTables]);
     }
 
     public function isFormatted(string $source, bool $alignTables = false): bool
@@ -39,59 +27,71 @@ final class CarveTools
     }
 
     /**
-     * Findings from every carve-php document lint rule. With an include root,
-     * included files are linted too and their findings carry `file` and
-     * `includedBy`.
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return list<\MarkupCarve\Carve\Lint\LintWarning>
+     * @return list<\MarkupCarve\SymfonyCarve\LintFinding>
      */
     public function lint(string $source, ?string $includeRoot = null, ?string $sourcePath = null): array
     {
         if ($includeRoot === null) {
-            return (new DocumentLinter())->lint($source);
+            return $this->findings(Carve::lint($source), $source);
         }
         try {
-            $resolver = new FilesystemIncludeResolver($includeRoot);
-        } catch (RuntimeException $exception) {
+            $resolver = FileResolver::forRoot($includeRoot);
+        } catch (Throwable $exception) {
             throw new InvalidArgumentException('Carve include root: ' . $exception->getMessage(), 0, $exception);
         }
 
-        return (new IncludeLinter())->lint($source, [], $resolver, $sourcePath);
+        return $this->findings(Carve::lint($source, ['includes' => ['resolver' => $resolver, 'file' => $sourcePath]]), $source, $includeRoot);
     }
 
     /**
-     * The block decision trace as JSON lines: a header, then one record per
-     * source line, as `carve trace` prints it.
+     * @param array<\MarkupCarve\Carve\Diagnostics\Diagnostic> $diagnostics
+     * @param string|null $root
+     * @param string $source
+     *
+     * @return list<\MarkupCarve\SymfonyCarve\LintFinding>
      */
-    public function trace(string $source): string
+    private function findings(array $diagnostics, string $source, ?string $root = null): array
     {
-        return DecisionTrace::jsonLines($source);
+        $result = [];
+        foreach ($diagnostics as $diagnostic) {
+            $file = $diagnostic->file;
+            $content = $file === null ? $source : @file_get_contents((string)$root . '/' . $file);
+            $before = is_string($content) ? substr($content, 0, max(0, $diagnostic->startOffset)) : '';
+            $last = strrpos($before, "\n");
+            $result[] = new LintFinding(
+                $diagnostic->code,
+                $diagnostic->message,
+                $file,
+                substr_count($before, "\n") + 1,
+                strlen($last === false ? $before : substr($before, $last + 1)) + 1,
+            );
+        }
+
+        return $result;
     }
 
+    /**
+     * Reads GitHub Flavored Markdown, as the 0.1 importer did; the engine's `markdown` format is CommonMark only.
+     */
     public function fromMarkdown(string $source): string
     {
-        return (new MarkdownToCarve())->convert($source);
+        return Carve::importDocument($source, ['from' => 'gfm'])->source;
     }
 
     public function fromHtml(string $source): string
     {
-        return (new HtmlToCarve())->convert($source);
+        return Carve::importHtml($source)->source;
     }
 
     public function fromDjot(string $source): string
     {
-        return (new DjotToCarve())->convert($source);
+        return Carve::importDocument($source, ['from' => 'djot'])->source;
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     */
     public function import(string $source, string $from): string
     {
         return match ($from) {
-            'markdown' => $this->fromMarkdown($source),
+            'markdown', 'gfm' => $this->fromMarkdown($source),
             'html' => $this->fromHtml($source),
             'djot' => $this->fromDjot($source),
             default => throw new InvalidArgumentException(sprintf('Unknown import format "%s". Use %s.', $from, implode(', ', self::IMPORT_FORMATS))),

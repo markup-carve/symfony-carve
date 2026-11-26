@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MarkupCarve\SymfonyCarve\Tests\Command;
 
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\SymfonyCarve\CarveTools;
 use MarkupCarve\SymfonyCarve\Command\ConvertCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -29,12 +31,15 @@ final class ConvertCommandTest extends CommandTestCase
     {
         $tester = new CommandTester(new ConvertCommand(new CarveTools()));
 
+        // C2-T-003: keep the conversion assertions until both 0.2 importers arrive.
+        $api = new ReflectionClass(Carve::class);
         self::assertSame(Command::SUCCESS, $tester->execute(['path' => $this->file($name, $content)]));
         self::assertSame('*bold*', trim($tester->getDisplay()));
     }
 
     public function testFromOverridesAndOutputWritesAFile(): void
     {
+        // C2-T-003: Markdown import is pending, see carve-php#5237.
         $tester = new CommandTester(new ConvertCommand(new CarveTools()));
         $target = $this->dir . '/out.crv';
 
