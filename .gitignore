@@ -5,3 +5,7 @@ composer.lock
 .phpcs.cache
 /phpstan.neon
 _*
+docs/node_modules
+docs/.vitepress/dist/
+docs/.vitepress/dist-versioned/
+docs/.vitepress/cache/
