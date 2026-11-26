@@ -20,5 +20,5 @@ composer require markup-carve/symfony-carve
 
 ## Documentation
 
+- [symfony-carve documentation](https://markup-carve.github.io/symfony-carve/)
 - [Carve documentation](https://markup-carve.github.io/carve/)
-- [Documentation index](docs/README.md)

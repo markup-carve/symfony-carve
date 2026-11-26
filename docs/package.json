@@ -1,0 +1,14 @@
+{
+  "name": "symfony-carve-docs",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "carve-grammars": "npm:@markup-carve/carve-grammars@^0.1.19",
+    "vitepress": "^1.6.3",
+    "vue": "^3.5.13"
+  }
+}
