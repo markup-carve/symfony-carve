@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Builds 0.1 (latest) at the site root and this checkout at 0.2/, each with its own
+# Builds this checkout (0.2, latest) at the site root and 0.1 at 0.1/, each with its own
 # docs/package files, config and theme. An empty ref builds this checkout itself.
 repo_dir="$(cd "$(dirname "$0")/.." && pwd)"
-latest_ref="${DOCS_LATEST_REF-origin/0.1}"
+latest_ref="${DOCS_LATEST_REF-}"
 latest_base="${DOCS_LATEST_BASE:-/symfony-carve/}"
-latest_label="${DOCS_LATEST_LABEL:-0.1 (latest)}"
-latest_edit_branch="${DOCS_LATEST_EDIT_BRANCH:-0.1}"
+latest_label="${DOCS_LATEST_LABEL:-0.2 (latest)}"
+latest_edit_branch="${DOCS_LATEST_EDIT_BRANCH:-main}"
 latest_series="${DOCS_LATEST_SERIES:-}"
-secondary_ref="${DOCS_SECONDARY_REF-}"
-secondary_base="${DOCS_SECONDARY_BASE:-/symfony-carve/0.2/}"
-secondary_label="${DOCS_SECONDARY_LABEL:-0.2 (dev)}"
-secondary_edit_branch="${DOCS_SECONDARY_EDIT_BRANCH:-main}"
-secondary_series="${DOCS_SECONDARY_SERIES-dev}"
+secondary_ref="${DOCS_SECONDARY_REF-origin/0.1}"
+secondary_base="${DOCS_SECONDARY_BASE:-/symfony-carve/0.1/}"
+secondary_label="${DOCS_SECONDARY_LABEL:-0.1}"
+secondary_edit_branch="${DOCS_SECONDARY_EDIT_BRANCH:-0.1}"
+secondary_series="${DOCS_SECONDARY_SERIES-}"
 combined_dist="$repo_dir/docs/.vitepress/dist-versioned"
 worktrees=()
 

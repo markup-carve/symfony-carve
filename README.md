@@ -19,4 +19,4 @@ composer require markup-carve/symfony-carve:dev-main
 {{ '= Hello'|carve }}
 ```
 
-Raw HTML is disabled and the Carve URL policy denies unsafe schemes by default. See the [documentation](https://markup-carve.github.io/symfony-carve/0.2/) for configuration, includes, commands, and current API gaps.
+Raw HTML is disabled and the Carve URL policy denies unsafe schemes by default. See the [documentation](https://markup-carve.github.io/symfony-carve/) for configuration, includes, commands, and current API gaps.

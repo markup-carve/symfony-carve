@@ -1,6 +1,6 @@
 # symfony-carve documentation
 
-The rendered site is at <https://markup-carve.github.io/symfony-carve/0.2/> (this branch) and <https://markup-carve.github.io/symfony-carve/> (0.1, latest).
+The rendered site is at <https://markup-carve.github.io/symfony-carve/> (this branch, 0.2) and <https://markup-carve.github.io/symfony-carve/0.1/> (0.1).
 
 - [Getting Started](guide/index.md)
 - [Installation](guide/installation.md)
