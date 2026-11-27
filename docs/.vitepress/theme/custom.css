@@ -17,3 +17,90 @@
   --vp-c-brand-3: #3a8570;
   --vp-home-hero-name-background: linear-gradient(135deg, #ffffff 0%, #4ba38a 100%);
 }
+
+/* Keep the status visible above the documentation navigation. */
+.docs-dev-banner {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--vp-z-index-layout-top);
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 1rem;
+  line-height: 32px;
+  text-align: center;
+  color: #fff;
+  background: #8b4513;
+  font-weight: 600;
+}
+/* The default theme offsets the fixed navigation and the sidebar by this height. */
+:root:has(.docs-dev-banner) {
+  --vp-layout-top-height: 32px;
+}
+/* A versioned build ends the nav on the version menu (an unversioned one ends on Links): a pill, so it reads as a switch. */
+:root:has(meta[name="docs-version"]) .VPNavBarMenu > .VPFlyout:last-child {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
+}
+:root:has(meta[name="docs-version"]) .VPNavBarMenu > .VPFlyout:last-child > .button {
+  height: 30px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 999px;
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+:root:has(meta[name="docs-version"]) .VPNavBarMenu > .VPFlyout:last-child > .button::before {
+  content: "Version";
+  margin-right: 6px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+:root:has(.docs-dev-banner) .VPNavBarMenu > .VPFlyout:last-child > .button {
+  border-color: #8b4513;
+  background: rgba(139, 69, 19, 0.12);
+  color: #8b4513;
+}
+.dark:has(.docs-dev-banner) .VPNavBarMenu > .VPFlyout:last-child > .button {
+  border-color: #d2955f;
+  background: rgba(210, 149, 95, 0.16);
+  color: #e0a875;
+}
+/* The same switch in the mobile menu: the version group is its last entry. */
+:root:has(meta[name="docs-version"]) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
+  margin-top: 16px;
+  padding: 0 14px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 12px;
+  background: var(--vp-c-brand-soft);
+}
+:root:has(meta[name="docs-version"]) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
+  color: var(--vp-c-brand-1);
+}
+:root:has(meta[name="docs-version"]) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button-text::before {
+  content: "Version ";
+  font-weight: 500;
+  opacity: 0.75;
+}
+:root:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
+  border-color: #8b4513;
+  background: rgba(139, 69, 19, 0.12);
+}
+:root:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
+  color: #8b4513;
+}
+.dark:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
+  border-color: #d2955f;
+  background: rgba(210, 149, 95, 0.16);
+}
+.dark:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
+  color: #e0a875;
+}
+/* Version links are absolute URLs to the other build, not external sites: no external-link arrow. */
+:root:has(meta[name="docs-version"]) .VPNavBarMenu > .VPFlyout:last-child .vp-external-link-icon::after,
+:root:has(meta[name="docs-version"]) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .vp-external-link-icon::after {
+  display: none;
+}
