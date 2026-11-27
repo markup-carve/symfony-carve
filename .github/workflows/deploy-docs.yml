@@ -1,7 +1,7 @@
 name: Deploy Documentation
 
-# The site holds 0.1 (latest) at the root, built from the 0.1 branch, and 0.2 (dev)
-# at 0.2/, built from main. A docs change on 0.1 dispatches this workflow.
+# The site holds 0.2 (latest) at the root, built from main, and 0.1 at 0.1/,
+# built from the 0.1 branch. A docs change on 0.1 dispatches this workflow.
 on:
   push:
     branches:
