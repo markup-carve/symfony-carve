@@ -20,6 +20,8 @@ export default defineConfig({
 
   head: [
     ['link', { rel: 'icon', href: `${docsBase}favicon.svg`, type: 'image/svg+xml' }],
+    // Marks a versioned build, so the theme styles only the version menu as a switch.
+    ...(docsVersionText ? [['meta', { name: 'docs-version', content: docsVersionText }] as [string, Record<string, string>]] : []),
     ...(process.env.VITE_DOCS_SERIES === 'dev' ? [['meta', { name: 'robots', content: 'noindex' }] as [string, Record<string, string>]] : []),
   ],
 
