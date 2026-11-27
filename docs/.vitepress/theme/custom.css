@@ -59,12 +59,12 @@
   font-weight: 500;
   opacity: 0.75;
 }
-:root:has(.docs-dev-banner) .VPNavBarMenu > .VPFlyout:last-child > .button {
+:root:has(meta[name="docs-version"]):has(.docs-dev-banner) .VPNavBarMenu > .VPFlyout:last-child > .button {
   border-color: #8b4513;
   background: rgba(139, 69, 19, 0.12);
   color: #8b4513;
 }
-.dark:has(.docs-dev-banner) .VPNavBarMenu > .VPFlyout:last-child > .button {
+.dark:has(meta[name="docs-version"]):has(.docs-dev-banner) .VPNavBarMenu > .VPFlyout:last-child > .button {
   border-color: #d2955f;
   background: rgba(210, 149, 95, 0.16);
   color: #e0a875;
@@ -85,18 +85,18 @@
   font-weight: 500;
   opacity: 0.75;
 }
-:root:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
+:root:has(meta[name="docs-version"]):has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
   border-color: #8b4513;
   background: rgba(139, 69, 19, 0.12);
 }
-:root:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
+:root:has(meta[name="docs-version"]):has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
   color: #8b4513;
 }
-.dark:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
+.dark:has(meta[name="docs-version"]):has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child {
   border-color: #d2955f;
   background: rgba(210, 149, 95, 0.16);
 }
-.dark:has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
+.dark:has(meta[name="docs-version"]):has(.docs-dev-banner) .VPNavScreenMenu > .VPNavScreenMenuGroup:last-child .button {
   color: #e0a875;
 }
 /* Version links are absolute URLs to the other build, not external sites: no external-link arrow. */
