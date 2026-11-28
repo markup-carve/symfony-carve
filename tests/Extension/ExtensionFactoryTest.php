@@ -6,6 +6,7 @@ namespace MarkupCarve\SymfonyCarve\Tests\Extension;
 
 use InvalidArgumentException;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\Name;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
 use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use MarkupCarve\SymfonyCarve\Extension\WikiLinkUrlTemplate;
@@ -42,6 +43,18 @@ final class ExtensionFactoryTest extends TestCase
     {
         // C2-X-005: fenced diagram presets use an extension matcher.
         self::assertInstanceOf(ExtensionDefinition::class, (new ExtensionFactory())->create('mermaid')[0]);
+    }
+
+    public function testADiagramCaseBuildsTheSameFencesAsItsString(): void
+    {
+        $names = static fn (array $extensions): array => array_map(
+            static fn ($extension): string => $extension instanceof ExtensionDefinition ? $extension->name : $extension::class,
+            $extensions,
+        );
+        $factory = new ExtensionFactory();
+
+        self::assertSame($names($factory->create('mermaid')), $names($factory->create(Name::Mermaid)));
+        self::assertSame(['symfony.plantuml', 'symfony.puml'], $names($factory->create(Name::Plantuml)));
     }
 
     public function testAnUnknownOptionIsRefused(): void
