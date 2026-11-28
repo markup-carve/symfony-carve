@@ -7,6 +7,7 @@ namespace MarkupCarve\SymfonyCarve\Tests\Extension;
 use InvalidArgumentException;
 use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
+use MarkupCarve\Carve\Extension\Name;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\SymfonyCarve\CarveBundle;
 use MarkupCarve\SymfonyCarve\CarveRenderer;
@@ -187,6 +188,28 @@ final class EngineConfigTest extends TestCase
         self::assertSame('', $noSections->toc()[0]['id']);
         $dataId = new CarveRenderer(extensions: [['type' => 'default_attributes', 'defaults' => ['heading' => ['data-id' => 'wrong']]]]);
         self::assertSame('Real', $dataId->renderResult("# Real\n")->toc()[0]['id']);
+    }
+
+    public function testNameCasesMatchTheirStrings(): void
+    {
+        $factory = new EngineExtensionFactory();
+        $names = static fn (array $extensions): array => array_map(static fn ($extension): string => $extension instanceof ExtensionDefinition ? $extension->name : $extension::class, $extensions);
+        self::assertSame($names($factory->create(['type' => 'heading_permalinks'])), $names($factory->create(Name::HeadingPermalinks)));
+        self::assertSame(['carve.plantuml.plantuml', 'carve.plantuml.puml'], $names($factory->create(['type' => Name::Plantuml, 'css_class' => 'uml'])));
+        self::assertStringContainsString('<pre class="uml">', (new CarveRenderer(extensions: [['type' => Name::Plantuml, 'css_class' => 'uml']]))->render("```puml\nA -> B\n```"));
+        $toc = new CarveRenderer(extensions: [Name::TableOfContents]);
+        self::assertStringContainsString('<nav', $toc->render("= A\n\n== B\n"));
+        $this->assertNoExtensionFallback($toc, "= A\n\n== B\n");
+    }
+
+    public function testTabsModeAndInternalHostsOptions(): void
+    {
+        $factory = new EngineExtensionFactory();
+        self::assertNotSame([], $factory->create(['type' => 'tabs', 'mode' => 'aria']));
+        $html = (new CarveRenderer(extensions: [['type' => 'external_links', 'internal_hosts' => ['example.com']]]))->render('[x](https://example.com) [y](https://other.org)');
+        self::assertSame(1, substr_count($html, 'target="_blank"'));
+        $this->expectException(InvalidArgumentException::class);
+        $factory->create(['type' => 'tabs', 'mode' => 'fancy']);
     }
 
     public function testPlantumlAlias(): void
