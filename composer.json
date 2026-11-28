@@ -24,7 +24,7 @@
     },
     "require": {
         "php": "^8.2",
-        "markup-carve/carve-php": "dev-main#193e3a327c8da535cd5319271ba9ccdd928d54bf",
+        "markup-carve/carve-php": "dev-main#e8bca22808e43a2ca75b3bf46006b716db3f7f34",
         "league/commonmark": "^2.9.2",
         "php-collective/djot": "^0.1.35",
         "psr/log": "^1.1 || ^2.0 || ^3.0",

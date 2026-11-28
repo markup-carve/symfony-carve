@@ -15,6 +15,7 @@ use MarkupCarve\Carve\Extension\Bundle;
 use MarkupCarve\Carve\Extension\DocumentTransform;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\Name;
 use MarkupCarve\Carve\Include\FileResolver;
 use MarkupCarve\Carve\Include\IncludeResolver;
 use MarkupCarve\Carve\Node;
@@ -141,7 +142,10 @@ final class CarveRenderer
         $standardRenderers = [];
         $headingShift = 0;
         foreach ($extensions as $extension) {
-            $type = is_string($extension) ? $extension : (is_array($extension) ? ($extension['type'] ?? null) : null);
+            $type = is_string($extension) || $extension instanceof Name ? $extension : (is_array($extension) ? ($extension['type'] ?? null) : null);
+            if ($type instanceof Name) {
+                $type = $type->value;
+            }
             if ($type === 'table_of_contents') {
                 $standardRenderers['carve.toc'] = 'standard';
             } elseif ($type === 'toc_placement') {

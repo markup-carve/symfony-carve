@@ -14,6 +14,7 @@
 
 ### Improvements
 
+- Extension entries accept the `MarkupCarve\Carve\Extension\Name` cases from carve-php, alone or as `type`. The named extensions now come from carve-php, which adds `mode` (css or aria) to `tabs` and `internal_hosts` to `external_links`. Array-configured plantuml fences are named `carve.plantuml.plantuml` and `carve.plantuml.puml`; their HTML is unchanged.
 - Register the standard table of contents renderers that carve-php main requires; move carve-php to main.
 - Keep text, Markdown, and ANSI output entry points through the Carve2 writer registry. Until their writers arrive, calls fail with a clear availability error.
 - Port tab and diagram registration to Carve2 extension definitions. Extract heading and frontmatter data from the Carve2 tree.

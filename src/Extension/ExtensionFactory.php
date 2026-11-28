@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use MarkupCarve\Carve\Extension\Claim;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Extension\ExtensionProvider;
+use MarkupCarve\Carve\Extension\Name;
 use MarkupCarve\Carve\Extension\RenderHost;
 use MarkupCarve\Carve\Node;
 
@@ -40,7 +41,7 @@ final class ExtensionFactory
      */
     public function create(mixed $config): array
     {
-        if (!is_string($config) && !is_array($config) && !$config instanceof ExtensionDefinition && !$config instanceof ExtensionProvider) {
+        if (!is_string($config) && !is_array($config) && !$config instanceof ExtensionDefinition && !$config instanceof ExtensionProvider && !$config instanceof Name) {
             throw new InvalidArgumentException('A Carve extension entry needs a type.');
         }
         if ($config === 'frontmatter' || $config === ['type' => 'frontmatter']) {
