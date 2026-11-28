@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MarkupCarve\SymfonyCarve\Tests\Extension;
 
 use InvalidArgumentException;
+use MarkupCarve\Carve\Carve;
 use MarkupCarve\Carve\Extension\ExtensionDefinition;
 use MarkupCarve\Carve\Node;
 use MarkupCarve\SymfonyCarve\CarveBundle;
@@ -13,6 +14,7 @@ use MarkupCarve\SymfonyCarve\Extension\EngineExtensionFactory;
 use MarkupCarve\SymfonyCarve\Extension\ExtensionFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
 use Symfony\Component\Config\Definition\Configuration;
 use Symfony\Component\Config\Definition\Processor;
 
@@ -39,13 +41,64 @@ final class EngineConfigTest extends TestCase
     public function testEveryRegisteredNameCanRender(array|string $entry): void
     {
         $factory = new EngineExtensionFactory();
-        self::assertNotSame([], $factory->create($entry));
+        if ($entry !== 'heading_levels' && $entry !== 'heading_level_shift') {
+            self::assertNotSame([], $factory->create($entry));
+        }
         self::assertNotSame('', (new CarveRenderer(extensions: [$entry]))->render('hello'));
     }
 
     public function testHeadingLevelsDefaultsToOneLevel(): void
     {
         self::assertStringContainsString('<h2>Title</h2>', (new CarveRenderer(extensions: ['heading_levels']))->render("# Title\n"));
+    }
+
+    public function testHeadingLevelShiftKeepsClampedOffsets(): void
+    {
+        $source = "# Title\n";
+        self::assertStringContainsString('<h1>Title</h1>', (new CarveRenderer(extensions: [['type' => 'heading_levels', 'offset' => -1]]))->render($source));
+        self::assertStringContainsString('<h6>Title</h6>', (new CarveRenderer(extensions: [['type' => 'heading_level_shift', 'offset' => 6]]))->render($source));
+        self::assertStringContainsString('<h6>Title</h6>', (new CarveRenderer(extensions: ['heading_levels', ['type' => 'heading_level_shift', 'offset' => 5]]))->render($source));
+        self::assertSame("## Title\n", (new CarveRenderer(extensions: ['heading_levels']))->renderMarkdown($source));
+    }
+
+    public function testTableOfContentsUsesStandardRenderer(): void
+    {
+        $source = "= A\n\n== B\n";
+        $renderer = new CarveRenderer(extensions: ['table_of_contents']);
+        $html = $renderer->render($source);
+
+        self::assertStringContainsString('<nav', $html);
+        self::assertStringContainsString('<a href="#B">B</a>', $html);
+        $this->assertNoExtensionFallback($renderer, $source);
+    }
+
+    public function testTocPlacementUsesStandardRenderer(): void
+    {
+        $source = "Intro.\n\n::: toc\n:::\n\n= A\n\n== B\n";
+        $renderer = new CarveRenderer(extensions: ['toc_placement']);
+        $html = $renderer->render($source);
+
+        self::assertStringContainsString('<nav', $html);
+        self::assertStringContainsString('<a href="#B">B</a>', $html);
+        $this->assertNoExtensionFallback($renderer, $source);
+    }
+
+    public function testHostRenderersTakePrecedenceAndDefaultsAreConditional(): void
+    {
+        $hostRenderer = static fn (): string => '<nav>Host</nav>';
+        $renderer = new CarveRenderer(extensions: ['table_of_contents', 'toc_placement'], renderers: ['carve.toc' => $hostRenderer]);
+        $options = (new ReflectionProperty(CarveRenderer::class, 'engineOptions'))->getValue($renderer);
+        self::assertSame(['carve.toc' => $hostRenderer, 'carve.tocPlacement' => 'standard'], $options['renderers']);
+
+        $plainOptions = (new ReflectionProperty(CarveRenderer::class, 'engineOptions'))->getValue(new CarveRenderer());
+        self::assertSame([], $plainOptions['renderers']);
+    }
+
+    private function assertNoExtensionFallback(CarveRenderer $renderer, string $source): void
+    {
+        $options = (new ReflectionProperty(CarveRenderer::class, 'engineOptions'))->getValue($renderer);
+        $result = Carve::renderWithDiagnostics($source, $options);
+        self::assertNotContains('extension-fallback-rendered', array_map(static fn ($diagnostic): string => $diagnostic->code, $result->diagnostics));
     }
 
     public function testExternalLinksNofollowOption(): void

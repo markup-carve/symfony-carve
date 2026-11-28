@@ -49,6 +49,7 @@ final class CarveRenderer
         'source_lines' => 'sourceLines',
         'smart_typography' => 'smartTypography',
         'soft_break_mode' => 'softBreak',
+        'renderers' => 'renderers',
     ];
 
     private readonly ?IncludeResolver $includeResolver;
@@ -90,6 +91,7 @@ final class CarveRenderer
      * @param string $cachePrefix
      * @param string|null $cacheVersion
      * @param string $softBreak
+     * @param array<string, mixed> $renderers
      */
     public function __construct(
         private readonly bool $rawHtml = false,
@@ -112,6 +114,7 @@ final class CarveRenderer
         private readonly string $cachePrefix = 'carve',
         private readonly ?string $cacheVersion = null,
         private readonly string $softBreak = 'newline',
+        private readonly array $renderers = [],
     ) {
         $this->arguments = get_defined_vars();
         if (preg_match('/[{}()\/\\\\@:]/', $cachePrefix) === 1) {
@@ -135,18 +138,33 @@ final class CarveRenderer
         }
         $diagramNames = $diagrams;
         $definitions = (new ExtensionFactory())->createAll(array_merge($extensions, $diagramNames));
+        $standardRenderers = [];
+        $headingShift = 0;
+        foreach ($extensions as $extension) {
+            $type = is_string($extension) ? $extension : (is_array($extension) ? ($extension['type'] ?? null) : null);
+            if ($type === 'table_of_contents') {
+                $standardRenderers['carve.toc'] = 'standard';
+            } elseif ($type === 'toc_placement') {
+                $standardRenderers['carve.tocPlacement'] = 'standard';
+            } elseif ($type === 'heading_levels' || $type === 'heading_level_shift') {
+                $offset = is_array($extension) ? (int)($extension['offset'] ?? 1) : 1;
+                $headingShift = min(5, $headingShift + max(0, min($offset, 5)));
+            }
+        }
         $engineOptions = [
             'rawHtml' => $rawHtml,
             'profile' => $profile ?? 'full',
             'mode' => $mode,
             'sections' => $sections,
             'headingIds' => $headingIds,
+            'headingShift' => $headingShift,
             'symbols' => $symbols,
             'sourceLines' => $sourceLines,
             'smartTypography' => $smartTypography,
             'softBreak' => $softBreak,
             'labels' => $labels,
             'extensions' => $definitions,
+            'renderers' => array_replace($standardRenderers, $renderers),
         ];
         if ($urlPolicy !== []) {
             $engineOptions['urlPolicy'] = $urlPolicy;
@@ -160,9 +178,10 @@ final class CarveRenderer
         $this->engineOptions = $engineOptions;
         $cacheable = true;
         try {
-            $extensionState = serialize([$extensions, $writers]);
+            $extensionState = serialize([$extensions, $writers, $renderers]);
         } catch (Throwable) {
             $extensionState = array_map(static fn (mixed $entry): string => is_object($entry) ? $entry::class : serialize($entry), $extensions);
+            $extensionState[] = array_map(static fn (mixed $entry): string => is_object($entry) ? $entry::class : serialize($entry), $renderers);
             $cacheable = $cacheVersion !== null;
         }
         $this->activeCache = $cacheable ? $cache : null;
@@ -369,6 +388,9 @@ final class CarveRenderer
         $writerOptions = $writerTarget === $target && !in_array($target, ['markdown', 'plain', 'ansi'], true)
             ? $this->engineOptions
             : array_intersect_key($this->engineOptions, array_flip(['smartTypography', 'urlPolicy', 'strictLosses']));
+        if ($target === 'markdown') {
+            $writerOptions['headingShift'] = $this->engineOptions['headingShift'];
+        }
 
         return Carve::writeTo($writerTarget, Carve::parse($source, $options), $writerOptions, $registry);
     }

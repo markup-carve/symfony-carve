@@ -68,6 +68,12 @@ final class CarveBundle extends AbstractBundle
                     ->variablePrototype()->end()
                     ->defaultValue([])
                 ->end()
+                ->arrayNode('renderers')
+                    ->info('Host renderers keyed by extension name. Host entries override automatic table of contents renderers.')
+                    ->useAttributeAsKey('name')
+                    ->variablePrototype()->end()
+                    ->defaultValue([])
+                ->end()
                 ->scalarNode('include_root')
                     ->info('Absolute containment root for opt-in file includes.')
                     ->defaultNull()
@@ -127,6 +133,7 @@ final class CarveBundle extends AbstractBundle
                 '$softBreak' => $config['soft_break_mode'],
                 '$labels' => $config['labels'],
                 '$extensions' => $config['extensions'],
+                '$renderers' => $config['renderers'],
                 '$diagrams' => $config['diagrams'],
                 '$cache' => $cache['enabled'] ? service($cache['pool']) : null,
                 '$cacheTtl' => $cache['ttl'],
