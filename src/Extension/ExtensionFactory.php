@@ -44,6 +44,10 @@ final class ExtensionFactory
         if (!is_string($config) && !is_array($config) && !$config instanceof ExtensionDefinition && !$config instanceof ExtensionProvider && !$config instanceof Name) {
             throw new InvalidArgumentException('A Carve extension entry needs a type.');
         }
+        // A case spells the same entry as its string, so it reaches the bundle's diagram fences too.
+        if ($config instanceof Name) {
+            $config = $config->value;
+        }
         if ($config === 'frontmatter' || $config === ['type' => 'frontmatter']) {
             return [];
         }
