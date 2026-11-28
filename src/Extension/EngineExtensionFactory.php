@@ -59,7 +59,6 @@ class EngineExtensionFactory
         'glossary' => [Glossary::class, 'bundle'],
         'graphviz' => [FencedRender::class, 'graphviz'],
         'heading_numbers' => [Navigation::class, 'headingNumbers'],
-        'heading_level_shift' => [Navigation::class, 'headingLevelShift'],
         'heading_permalinks' => [Navigation::class, 'headingPermalinks'],
         'heading_reference' => [Navigation::class, 'headingReference'],
         'index_terms' => [IndexTerms::class, 'bundle'],
@@ -84,7 +83,7 @@ class EngineExtensionFactory
     {
         $types = array_merge(
             array_keys(self::NAMED),
-            ['external_links', 'heading_levels', 'img_fence', 'plantuml', 'tabs', 'wikilinks'],
+            ['external_links', 'heading_level_shift', 'heading_levels', 'img_fence', 'plantuml', 'tabs', 'wikilinks'],
         );
         sort($types);
 
@@ -132,14 +131,14 @@ class EngineExtensionFactory
 
             return [Navigation::externalLinks($target, $rel, $nofollow)];
         }
-        if ($type === 'heading_levels') {
+        if ($type === 'heading_levels' || $type === 'heading_level_shift') {
             self::acceptKeys($config, ['type', 'offset']);
             $offset = $config['offset'] ?? 1;
             if (!is_int($offset)) {
                 throw new InvalidArgumentException('Heading level offset must be an integer.');
             }
 
-            return [Navigation::headingLevelShift($offset)];
+            return [];
         }
 
         if ($type === 'wikilinks') {

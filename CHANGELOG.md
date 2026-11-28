@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
 
 ### Breaking
 
@@ -14,6 +14,7 @@
 
 ### Improvements
 
+- Register the standard table of contents renderers that carve-php main requires; move carve-php to main.
 - Keep text, Markdown, and ANSI output entry points through the Carve2 writer registry. Until their writers arrive, calls fail with a clear availability error.
 - Port tab and diagram registration to Carve2 extension definitions. Extract heading and frontmatter data from the Carve2 tree.
 - Keep pending Markdown and Djot import commands registered with clear availability errors.
